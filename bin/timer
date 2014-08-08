@@ -1,0 +1,67 @@
+#!/opt/twitter/bin/python
+
+import time
+import sys
+import os
+
+multipliers = [7,24,60,60]
+
+status_line = False
+if (os.environ['TERM'] == "xterm" or os.environ['TERM'] == "screen" or
+    os.environ['TERM'] == "xterm-256color"):
+  status_line = True
+
+if len(sys.argv) == 1:
+  seconds = 25*60
+else:
+  requested_time = sys.argv[1].split(":")
+  requested_time.reverse()
+  seconds = int(requested_time.pop())
+  while requested_time != []:
+    seconds *= multipliers.pop()
+    seconds += int(requested_time.pop())
+
+last_loop_time = time.time()
+end_time = last_loop_time + seconds
+
+def divmod(val, divisor):
+  return (val/divisor, val%divisor)
+
+print "^S/^Q to pause/resume"
+
+while True:
+  current_time = time.time()
+
+  elapsed = current_time - last_loop_time
+  if elapsed > 3:
+    #I don't have a way to trap ^S/^Q, so I'm going to assume that if
+    #the loop hasn't been serviced in more than 3 seconds, it's
+    #because we've been paused, and I'm going to add the difference
+    #back into the timer:
+    end_time += elapsed - 1
+
+  last_loop_time = current_time
+
+  remaining = int(end_time - current_time + 0.5)
+  if remaining < 0: remaining = 0
+
+  minutes, seconds = divmod(remaining, 60)
+  hours, minutes = divmod(minutes, 60)
+  days, hours = divmod(hours, 24)
+
+  time_string = ''
+  if remaining >= 86400: time_string += ("%02d:" % days)
+  if remaining >= 3600:  time_string += ("%02d:" % hours)
+  time_string += "%02d:%02d" % (minutes, seconds)
+
+  if status_line: sys.stdout.write("\033]0;timer: %s\a" % time_string)
+
+  sys.stdout.write("\r%s   \b\b\b" % time_string)
+
+  if remaining > 0:
+    sys.stdout.flush()
+  else:
+    sys.stdout.write("\n")
+    sys.exit(0)
+
+  time.sleep(1)

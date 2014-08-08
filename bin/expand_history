@@ -1,0 +1,58 @@
+#!/opt/twitter/bin/python
+
+import os
+import re
+import sys
+
+import expand
+
+#Is there a way to make this work without requiring the user to have a
+#"history -a" in their bind command?
+
+if len(sys.argv) != 2:
+  sys.stderr.write('usage: %s [tmp_file_name]\n' % sys.argv[0])
+  exit(1)
+
+expander = expand.Expand(sys.argv[1])
+
+token_to_expand = expander.get_token()
+
+history_file = os.environ['HOME'] + '/.bash_history'
+tmp_file = os.environ['HOME'] + '/tmp/expand_history.tmp'
+token0 = expander.get_token(0)
+re_token_finder = re.compile('%s\S*' % token_to_expand)
+re_tokenizer = re.compile('\S+')
+potential_matches = []
+token_offset = expander.get_token_offset()
+
+for line in open(history_file):
+  if line.find(expander.get_token(0)) == 0:
+    candidate_list = re.findall(re_tokenizer, line)
+    if token_offset<=1:
+      if len(candidate_list) <= token_offset:
+	candidate_list = []
+      else:
+	candidate_list = [candidate_list[token_offset]]
+    else:
+      candidate_list = candidate_list[2:]
+
+    for token in candidate_list:
+      match = re.match(re_token_finder, token)
+      if match:
+	potential_matches.append(match.group(0))
+
+potential_matches = sorted(set(potential_matches))
+num_matches = len(potential_matches)
+
+if num_matches == 0:
+  expander.append_output('echo No Matches')
+  exit(0)
+
+common_base = expand.get_common_base(potential_matches)
+
+if num_matches > 1:
+  selected_option = expander.get_selected_option(potential_matches, common_base)
+  if selected_option > -1:
+    potential_matches = [potential_matches[selected_option]]
+
+expander.display(common_base, common_base, potential_matches)

@@ -1,0 +1,50 @@
+#!/opt/twitter/bin/python
+
+import sys
+import re
+#import fileinput
+from subprocess import Popen, PIPE
+
+underline = {True: "\033[4m", False: "\033[0m"}
+
+def mark_triples(val_str):
+  initial_len = len(val_str)
+  toggle = (initial_len)%6 >= 3
+  retval = underline[toggle]
+  group_size = (initial_len)%3
+  for c in val_str:
+    if group_size == 0:
+      toggle = not toggle
+      retval += underline[toggle]
+    retval += c
+    group_size = (group_size + 2)%3
+
+  return retval + underline[False]
+
+if len(sys.argv) > 1 and sys.argv[1] == '--test_a':
+  print '         ' + mark_triples('0')
+  print '        ' + mark_triples('10')
+  print '       ' + mark_triples('120')
+  print '      ' + mark_triples('1230')
+  print '     ' + mark_triples('12340')
+  print '    ' + mark_triples('123450')
+  print '   ' + mark_triples('1234560')
+  print '  ' + mark_triples('12345670')
+  print ' ' + mark_triples('123456780')
+  print '' + mark_triples('1234567890')
+  exit(0)
+
+if not sys.stdout.isatty():
+  ls_args = ['/bin/ls','-la'] + sys.argv[1:]
+  pipe = Popen(ls_args, stdout=PIPE)
+  for line in pipe.stdout:
+    print line.strip()
+else:
+  ls_args = ['/bin/ls','-laG'] + sys.argv[1:]
+  pipe = Popen(ls_args, stdout=PIPE)
+  for line in pipe.stdout:
+    matches = re.findall('\d{4,}', line)
+    for match in matches:
+      marked = mark_triples(match)
+      line = line.replace(match, marked)
+    print line.strip()

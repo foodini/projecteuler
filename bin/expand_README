@@ -1,0 +1,121 @@
+Expand v0.1 - A bash command-line expansion tool.
+              rbarry@google.com
+
+
+WHY? ------------------------
+
+I couldn't guess how many times I've found myself looking to edit a file, deep
+in my source control hierarchy, typing a few characters and hitting Tab, then
+poking a few more keys and hitting Tab, mashing a few more buttons and hitting
+Tab, GOTO 10.  You know the drill.  The vast majority of the time, the file I'm
+looking for is one that is already open in one of my changelists, so I thought
+I'd dig into bash-completion for a way to do Tab completion using some help from
+Perforce.
+
+What I found is a horrific tar pit.  bash completion chooses what logic to
+execute based upon argv[0].  If you want new logic to execute, regardless of
+what argv[0] might be, bash completion is not your friend.
+
+The expand tool uses bash's bind to associate a couple keystrokes with scripts
+that edit your command line.
+
+
+SETUP -----------------------
+
+To set up, you'll need a ~/tmp directory and you'll need to have executed the
+following:
+
+    export COMP_TMP="$HOME/tmp/$BASHPID.sh"
+    bind -x '"\eo":"expand_scm -o $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
+    bind -x '"\en":"expand_scm -c $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
+    bind -x '"\eh":"expand_history $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
+
+You can change COMP_TMP to anything you like, really, as long as you have write
+access to the location.  Just be sure to use $HOME instead of ~, if you need it.
+
+You'll also need the scripts in this package to be in your search path so the
+above commands can find them.
+
+
+USE (noun) ------------------
+
+I use these scripts with a personal perforce server and in my citc clients.  I
+need to add some configuration to Expand so it will work with whatever perforce
+client you may have.  (Adding this is next on the TODO list.)
+
+g4d into a citc directory where you have a bunch of open files.  At the top
+level, just hit Alt-O.  In less than a second, you should see a list of all the
+open files in that client.  This is what I see now:
+
+fzzt: {GDBN}/google3> vi
+   0 apphosting/api/app_identity/app_identity.py : edit
+   1 apphosting/api/app_identity/app_identity_service.proto : edit
+   2 apphosting/api/app_identity/app_identity_stub.py : edit
+   3 apphosting/api/app_identity/app_identity_test.py : edit
+   4 apphosting/api/app_identity/robot_signing_service.cc : edit
+   5 apphosting/api/app_identity/robot_signing_service.h : edit
+   6 apphosting/api/app_identity/robot_signing_service_quotas.cc : edit
+   7 apphosting/api/app_identity/robot_signing_service_quotas.h : edit
+   8 apphosting/api/app_identity/robot_signing_service_test.cc : edit
+   9 apphosting/appserver/register_methods.cc : edit
+  10 apphosting/base/logs.proto : edit
+  11 apphosting/base/quotas.proto : edit
+  12 apphosting/quotas/quotas.h : edit
+  13 apphosting/tools/quotas/quovadis.py : edit
+fzzt: {GDBN}/google3> vi apphosting/
+
+My command line has been expanded, in the same way it would have been if I had
+used bash complete on a directory that contained only my open files.  I could
+keep typing out my command line and hit Alt-O again, or (and this is one of
+those places that I'm really looking for feedback and criticism) hit ^V twice.
+The first ^V tells bash to take the next key literally.  The second is a ^V
+that will be used by Expand as a delimiter.  Typing the line number of the file
+I want, right after the ^Vs, will tell Expand which line I want.  Alt-O will
+now turn this:
+
+    fzzt: {GDBN}/google3> vi apphosting^V13
+
+into this:
+
+    fzzt: {GDBN}/google3> vi apphosting/tools/quotas/quovadis.py
+
+
+I can also complete changelist numbers:
+
+    fzzt: {GDBN}/google3> g4 change -c [Alt-N]
+
+Expansion of changelist IDs works almost like expansion of open files, with one
+small difference.  Most of the time, I only care about numbered changelists, so
+Expand will prefer to expand to numbers if I don't give it a starting point and
+a numbered changelist exists.  It will only expand to 'default' if I have no
+numbered changelists in my client or if I give it at least the first character:
+
+                                       v
+    fzzt: {GDBN}/google3> g4 change -c d[Alt-N]
+                                       ^
+
+
+EXPERIMENTAL ----------------
+
+I'm playing with having Expand work on your bash history.  For now, it assumes
+that if I'm expanding argv[0], it will only look at argv[0]s from my history.
+If I'm expanding anything after argv[0], it will only look at entries from my
+history that have the same argv[0] as my current command line.  For example, if
+I have:
+
+    fzzt: {GDBN}/google3> blaze test [Alt-H]
+
+then only arguments from previous calls to blaze will be candidates for
+expanding my current command line.
+
+Because so many commands use their argv[1] as a subcommand, argv[1] is treated
+specially.  argv[1] can only consider other argv[1]s a match candidates.  Any
+argument after that can match any of argv[1]...argv[n-1].
+
+
+TODO ------------------------
+
+I need to generalize the section on changelist IDs where I discuss the default
+changelist.
+
+

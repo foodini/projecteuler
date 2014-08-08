@@ -1,0 +1,92 @@
+#!/opt/twitter/bin/python
+
+# TODO: * When the thing starts, set an alarm that will kill the process if it
+#	  takes too long?  I haven't seen an issue yet, but it could get ugly
+#	  with too many open files.
+
+import os
+import sys
+
+import expand
+import p4
+
+def expand_open_files(token_to_expand):
+  # abspath tries to be helpful - it removes things like a trailing "/.".
+  # This is not a good thing if you have ~/.vimrc and ~/.bashrc open.  It happens
+  # that adding trailing garbage, then removing it from the result will get what
+  # we want from both abspath and from "p4|g4 where".
+  trailing_crapola = 'LOTSOFTRAILINGCRAPOLA'
+  token_filespec = os.path.abspath(token_to_expand+trailing_crapola)
+  len_crapola = len(trailing_crapola)
+  token_filespec = token_filespec[:-len_crapola]
+
+  opened_file_specs = source_control.opened()
+
+  matching_opened_file_specs = expand.filter_for_matches(token_filespec,
+							 opened_file_specs)
+
+  if not matching_opened_file_specs:
+    expander.append_output('echo No Matches')
+    exit(0)
+
+  matching_opened_file_specs = (
+      [(os.path.relpath(a),b) for (a,b) in matching_opened_file_specs])
+
+  common_base_file_spec = expand.get_common_base(matching_opened_file_specs)
+
+  if len(matching_opened_file_specs) > 1:
+    selected_option = expander.get_selected_option(
+	matching_opened_file_specs, common_base_file_spec)
+    if selected_option > -1:
+      matching_opened_file_specs = [matching_opened_file_specs[selected_option]]
+      common_base_file_spec = expand.get_common_base(matching_opened_file_specs)
+
+  if common_base_file_spec == '':
+    relpath = ''
+  else:
+    relpath = os.path.relpath(common_base_file_spec)
+    if common_base_file_spec[-1] == '/':
+      relpath += '/'
+
+  expander.display(relpath, common_base_file_spec, matching_opened_file_specs)
+
+def expand_changelist_numbers(token_to_expand):
+  pending_changes = source_control.pending()
+  matching_changes = expand.filter_for_matches(token_to_expand, pending_changes)
+
+  if not matching_changes:
+    if 'default'.find(token_to_expand) == 0:
+      matching_changes=[('default', '(The default perforce changelist)')]
+    else:
+      expander.append_output('echo No Matches')
+      exit(0)
+
+  common_changelist_number = expand.get_common_base(matching_changes)
+  if len(matching_changes) > 1:
+    selected_option = expander.get_selected_option(
+	matching_changes, common_changelist_number)
+    if selected_option > -1:
+      matching_changes = [matching_changes[selected_option]]
+      common_changelist_number = expand.get_common_base(matching_changes)
+
+
+  expander.display(common_changelist_number, common_changelist_number, matching_changes)
+
+cwd = os.getcwd()
+
+if cwd.find('/google/src/cloud') == 0:
+  source_control = p4
+else:
+  source_control = p4
+
+if len(sys.argv) != 3:
+  sys.stderr.write('usage: %s [-o|-c] [tmp file name]\n' % sys.argv[0])
+  exit(1)
+
+expander = expand.Expand(sys.argv[2])
+token_to_expand = expander.get_token()
+
+if sys.argv[1] == '-o':
+  expand_open_files(token_to_expand)
+elif sys.argv[1] == '-c':
+  expand_changelist_numbers(token_to_expand)

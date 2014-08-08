@@ -1,0 +1,52 @@
+#!/opt/twitter/bin/python
+
+import sys
+import re
+
+underline = {True: "\033[4m", False: "\033[24m"}
+field_id = None
+
+#TODO: You might have to rewrite to support a need for comify to not break
+#      existing color formatting.
+
+def mark_triples(val_str):
+  initial_len = len(val_str)
+  toggle = (initial_len)%6 >= 3
+  retval = underline[toggle]
+  group_size = (initial_len)%3
+  for c in val_str:
+    if group_size == 0:
+      toggle = not toggle
+      retval += underline[toggle]
+    retval += c
+    group_size = (group_size + 2)%3
+
+  return retval + underline[False]
+
+next_is_field_id = False
+for arg in sys.argv:
+  if arg == '-f':
+    next_is_field_id = True
+  elif next_is_field_id:
+    next_is_field_id = False
+    field_id = int(arg)
+
+re_fieldbreak = re.compile('\s*\S+\s*')
+re_digitgroups = re.compile('\d{4,}')
+for line in sys.stdin.readlines():
+  line = line.strip()
+  left = ''
+  field = line
+  right = ''
+  if field_id:
+    matches = re_fieldbreak.findall(line)
+    if len(matches) >= field_id:
+      left = ''.join(matches[:field_id])
+      field = matches[field_id]
+      right = ''.join(matches[field_id+1:])
+
+  matches = re_digitgroups.findall(field)
+  for match in matches:
+    marked = mark_triples(match)
+    field = field.replace(match, marked)
+  print left + field + right

@@ -1,0 +1,5 @@
+export FITHOST=99.117.103.46
+export FIT=ronb@$FITHOST
+export FITHOME=$FIT:/home/ronb
+export BLUE=foodinio@box481.bluehost.com
+export BLUEHOME=$BLUE:/home1/foodinio
