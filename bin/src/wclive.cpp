@@ -74,7 +74,9 @@ int main (int argc, char *argv[])
 	char inputChar;
 	signal (SIGALRM, handler);
 	alarm (1);
-	while (in = getNextInputStream(argc, argv))
+  // weird parentheses to silence an annoying warning about using = in a
+  // condition.
+	while ((in = getNextInputStream(argc, argv)))
 	{
 		inputChar = fgetc(in);
 		while (!feof(in))
