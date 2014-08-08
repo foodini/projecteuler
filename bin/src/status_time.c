@@ -18,6 +18,7 @@ void handler(int unused) {
 
 int main(int argc, char *argv[]) {
   pid_t pid = fork();
+  int i;
   if (pid != 0) { //parent
     char buf[80];
     buf[79] = 0;
@@ -41,7 +42,7 @@ int main(int argc, char *argv[]) {
         elapsedTime /= 10;
       }
       printf ("\033]0; %s %s", buf+bufPos+1, prompt);
-      for (int i=1; i<argc; ++i) 
+      for (i=1; i<argc; ++i) 
         printf("%s ", argv[i]);
       printf("\a");
       fflush(stdout);
