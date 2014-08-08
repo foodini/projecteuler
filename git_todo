@@ -1,4 +1,10 @@
-* Get the shared code in comify and a in one place.
+HIGH priority
 * Create an expand module for git
 * rewrite color_swatch to do layout dynamically. I'd like to have it show all
   valid combinations for a particular terminal.
+
+MEDIUM priority
+* Get the shared code in comify and a in one place.
+
+LOW priority
+* Should wclive be able to live-track multiple files?

@@ -1,4 +1,4 @@
-#!/opt/twitter/rvm/rubies/ree-1.8.7-2012.02/bin/ruby
+#!/bin/ruby
 
 def beep
   print "\a"

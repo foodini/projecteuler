@@ -1,4 +1,4 @@
-#!/opt/twitter/bin/python
+#!/bin/python
 
 import sys
 import re
