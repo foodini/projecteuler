@@ -1,6 +1,11 @@
 /*
 !.bashrc_xtras
-!.bashrc_remote
 !/bin**
 !.gitignore
 !git_todo
+
+#Fix this so you don't have to name every one:
+bin/wclive
+bin/src/wclive
+bin/status_time
+bin/src/status_time
