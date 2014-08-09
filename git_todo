@@ -8,3 +8,29 @@ MEDIUM priority
 
 LOW priority
 * Should wclive be able to live-track multiple files?
+* I need to build options into the bash function 'a' to allow you to override
+  its choice of color.
+* Get prompts colored across all machines.
+
+Completion
+* Break completion out into its own repository.
+* What about adding support for the directories you've visited... Could be done
+  by having the prompt_command stash it somewhere.
+* What if someone - out of habit - starts typing to resolve the ambiguity?  What
+  would happen if I put their keystroke(s) into the completion and returned
+  them to the prompt?
+* Insert a space at the end of successful completions.
+* Columnize output.
+* Three columns for expand_scm: file, changelist#, action.
+* Why does the options selection list get printed again when you hit ^C?
+* make the "option : description" printing order configurable so changelist
+  id can come before filespec.
+* I would really like to be able to match on the name of the file, so /a/b/cd
+  should be matchable with c[Alt-O]
+  * What do I do if I have:
+    apphosting/...../app_id
+    apphosting/...../app_id
+    ...and someone has entered app[Alt-O]?
+* There needs to be a commandline option to prevent prompting.  Sometimes, I
+  want old-fashioned disambiguation.
+* Color changelist IDs so they're easier to visually group?
