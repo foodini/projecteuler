@@ -5,6 +5,9 @@ HIGH priority
 
 MEDIUM priority
 * Get the shared code in comify and a in one place.
+* Pausing (in timer) doesn't work in OSX. XOFF doesn't prevent the process from
+  being scheduled as it does in linux and in cygwin - it just buffers its output
+  indefinitely.
 
 LOW priority
 * Should wclive be able to live-track multiple files?
