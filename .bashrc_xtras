@@ -1,10 +1,15 @@
-# To deal with Fucked-up macs that can't get their shit together:
-alias a=~/bin/a
+# * Get bash logging working.  Do a mkdir -p for ~/tmp early, since this and
+#   expand_p4_path depend upon it.
+# * Set the default prompt hostname color in here, if you're still going to use
+#   one.
 
 if [[ $TERM == "cygwin" ]]; then
   export SHELLOPTS
   set -o igncr
 fi
+
+export P4_BINARY_LOCATION='/usr/local/bin/p4'
+export FITHOST=99.117.103.46
 
 source ~/bin/color_swatch
 
@@ -14,37 +19,66 @@ alias tb='timer && beep'
 
 #######################Per-machine configurations###############################
 case $HOSTNAME in
+rbarry-glaptop)
+  export PC_PREFERRED=$PC_BROWN
+  export ESC_PREFERRED=$ESC_BROWN
+  alias g4grep='g4 opened | cut -d\# -f1 | cut -d/ -f5- | xargs grep'
+  alias g4o='g4 opened | cut -d\# -f1 | cut -d/ -f5-'
+  export P4MERGE=/usr/bin/meld
+  export P4CLIENT=google-laptop
+  alias p4='~/bin/p4_client -p ssl:$FITHOST:1666 -c google-laptop -u ronb'
+  alias beep='~/bin/beep'  #gubuntu has /usr/bin/beep - it doesn't work
+  alias tb='timer && beep'
+  export P4_BINARY_LOCATION=~/bin/p4_client
+  export FZZT=rbarry@fzzt.sfo.corp.google.com
+  ;;
+fzzt.*)
+  export PC_PREFERRED=$PC_BLUE
+  export ESC_PREFERRED=$ESC_BLUE
+  export PATH=$PATH:~/gsutil:/hbspa/tools
+  alias g4grep='g4 opened | cut -d\# -f1 | cut -d/ -f5- | xargs grep'
+  alias g4o='g4 opened | cut -d\# -f1 | cut -d/ -f5-'
+  export P4MERGE=/usr/bin/meld
+  export P4CLIENT=google-fzzt
+  alias p4='~/bin/p4_client -p ssl:$FITHOST:1666 -c google-fzzt -u ronb'
+  alias beep='~/bin/beep'  #gubuntu has /usr/bin/beep - it doesn't work
+
+  AH_DEVEL_CELL=ib  # or whatever
+  AH_DEVEL_BIGTABLE_TYPE=mix  # please, use mix, not srv
+  ADMIN_CONSOLE_BUNDLE=blaze-bin/apphosting/client/admin_console/bundle-devel
+  export P4_BINARY_LOCATION=~/bin/p4_client
+
+  bind -x '"\eg":"/google/src/cloud/rbarry/rbarry-expand-buganizer/google3/blaze-bin/experimental/users/rbarry/expand/expand_buganizer $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
+  ;;
 ron-desktop)
   export PC_PREFERRED=$PC_BROWN
   export ESC_PREFERRED=$ESC_BROWN
   export PATH=$PATH:$HOME/bin/cygwin
-  export STATUS_LINE_SUPPORT=cygwin
   ;;
 fit-pc)
   export PC_PREFERRED=$PC_GREEN
   export ESC_PREFERRED=$ESC_GREEN
-  export STATUS_LINE_SUPPORT=linux
+  export FITHOST=192.168.0.10
   ;;
 box481.*)
   export PC_PREFERRED=$PC_CYAN
   export ESC_PREFERRED=$ESC_CYAN
   export HISTTIMEFORMAT=''
-  export STATUS_LINE_SUPPORT=linux
+  alias p4='~/bin/p4 -p ssl:$FITHOST:80 -c bluehost -u nobody'
+  export P4CLIENT=bluehost
   ;;
-tw-mbp-rbarry)
-  export PC_PREFERRED=$PC_PURPLE
-  export ESC_PREFERRED=$ESC_PURPLE
-  export PATH=$PATH:$HOME/local/avr/bin
-  #Because OSX defaults to always using grep color, even if output is piped or
-  #redirected. Morons.
-  alias grep='grep --color=auto'
-  function idea {
-  ~/bin/status_time ./pants goal idea expandodo/core:: expandodo/caps:: expandodo/card-data-handler:: --idea-project-name=$@
-  }
-  export STATUS_LINE_SUPPORT="mac"
 esac
 ################################################################################
 
+
+case $TERM in
+  xterm|screen|xterm-256color)
+    export SUPPORTS_STATUS_LINE="true"
+    ;;
+  *)
+    export SUPPORTS_STATUS_LINE="false"
+    ;;
+esac
 
 export PATH=$PATH:~/bin
 
@@ -58,32 +92,34 @@ alias less='less -R'
 
 alias rerc='source ~/.bashrc_xtras'
 alias virc='vi ~/.bashrc_xtras'
-alias fxgrep='find . -type f | xargs grep --color=auto'
-alias fgrep='find . | grep --color=never'
-
-source ~/.bashrc_remote
+alias fxgrep='find . | xargs grep'
+alias fgrep='find . | grep'
+export FIT=ronb@$FITHOST
+export FITHOME=$FIT:/home/ronb
+export BLUE=foodinio@box481.bluehost.com
+export BLUEHOME=$BLUE:/home1/foodinio
 export EDITOR='vim'
 
 source ~/bin/acd_func.sh
 
-#LOGFILE="$HOME/bashlogs/$BASHPID"
+LOGFILE="$HOME/bashlogs/$BASHPID"
 
 ################################################################################
 #I want these commands to always use color, unless the command is being
 #redirected to a file.  I'm sure I'll have to make changes as I find issues.
 function a {
   if [[ "$CMD" =~ '>' ]]; then
-  ls -al --color=auto "$@"
+    ls -al --color=auto "$@"
   else
-  ls -al --color=always "$@" | comify -f 4
+    ls -al --color=always "$@" | comify -f 4
   fi
 }
 
 function grep {
   if [[ "$CMD" =~ '>' ]]; then
-  /usr/bin/grep --color=auto "$@"
+    /bin/grep --color=auto "$@"
   else
-  /usr/bin/grep --color=always "$@"
+    /bin/grep --color=always "$@"
   fi
 }
 
@@ -94,91 +130,106 @@ function hl {
 }
 ################################################################################
 
+
 #Todo:
+# * Add total logging: write $CMD, it's return value, start and end time to a
+#   log file somewhere?
+# * Get rid of hostname when you're on localhost?  (how?)
+# * (on fit-pc, anyway) I'm still seeing the previous command flash up when a
+#   blank line is entered
+# * move the color definitions to a different file?
 #If you put slashes in here, make SURE they are escaped with a backslash!!!
 replace_substrings() {
-  if [ $BASE == $PWD ]; then
-      BACKREF=$1
-      CRUFT=$2
-      SUB=$3
-      SUB_BNW=$4
-      BASE=`echo $PWD|sed -e "s/^$CRUFT.*/$SUB/g"`
-      BASE_BNW=`echo $PWD|sed -e "s/^$CRUFT.*/$SUB_BNW/g"`
-      TRIM=`echo $PWD|sed -e "s/^$CRUFT\(.*\)/$BACKREF/g"`
-  fi
+    if [ $BASE == $PWD ]; then
+        BACKREF=$1
+        CRUFT=$2
+        SUB=$3
+        SUB_BNW=$4
+        BASE=`echo $PWD|sed -e "s/^$CRUFT.*/$SUB/g"`
+        BASE_BNW=`echo $PWD|sed -e "s/^$CRUFT.*/$SUB_BNW/g"`
+        TRIM=`echo $PWD|sed -e "s/^$CRUFT\(.*\)/$BACKREF/g"`
+    fi
 }
 
 gen_prompt_text() {
-  LAST_RETURN_VAL=$?
-  #echo $LAST_RETURN_VAL >> $LOGFILE
-  #date >> "$LOGFILE"
-  #echo >> "$LOGFILE"
+    LAST_RETURN_VAL=$?
+    #echo $LAST_RETURN_VAL >> $LOGFILE
+    #date >> "$LOGFILE"
+    #echo >> "$LOGFILE"
 
-  if [ $LAST_RETURN_VAL == 0 ]; then
-      PC_BASE_COL=$PC_PREFERRED
-      ESC_BASE_COL=$ESC_PREFERRED
-  else
-      PC_BASE_COL=$PC_RED
-      ESC_BASE_COL=$ESC_RED
-  fi
+    if [ $LAST_RETURN_VAL == 0 ]; then
+        PC_BASE_COL=$PC_PREFERRED
+        ESC_BASE_COL=$ESC_PREFERRED
+    else
+        PC_BASE_COL=$PC_RED
+        ESC_BASE_COL=$ESC_RED
+    fi
 
-  HOST_SHORT=`hostname | cut -f1 -d.`
+    HOST_SHORT=`hostname | cut -f1 -d.`
 
-  BASE=$PWD
-  TRIM=$PWD
+    BASE=$PWD
+    TRIM=$PWD
 
-  #replace_substrings takes;
-  # * This is the worst bit, and I'll try to figure it out later.  You
-  #   have to provide the regular expression backreference ONE BEYOND the
-  #   last one you use.  If you don't use any (or you don't know what I'm
-  #   talking about, use "\1".  If you use one backreference in the
-  #   second argument, use "\2".  Etc.  It's used to extract the last
-  #   portion of your current working directory.
-  # * a regular expression match for the bit you want to chop off at the
-  #   beginning 
-  # * the string to replace the regex with in colorized prompts.  You don't
-  #   have to use color.  If you don't this argument and the next will be
-  #   the same.
-  # * the string to replace the regex with in colorless prompts.
-  case $HOSTNAME in
-  tw-mbp-rbarry)
-    replace_substrings "\1" ".Users.rbarry"\
-    "$ESC_BOLD${ESC_GREEN}~$ESC_RESET$ESC_BASE_COL" "~"
-    ;;
-  fit-pc)
-    replace_substrings "\1" ".home.ronb"\
-    "$ESC_BOLD${ESC_GREEN}~$ESC_RESET$ESC_BASE_COL" "~"
-    ;;
-  box481.*)
-    replace_substrings "\1" ".home1.foodinio"\
-    "$ESC_BOLD${ESC_GREEN}~$ESC_RESET$ESC_BASE_COL" "~"
-    ;;
-  esac
+    #replace_substrings takes;
+    # * This is the worst bit, and I'll try to figure it out later.  You
+    #   have to provide the regular expression backreference ONE BEYOND the
+    #   last one you use.  If you don't use any (or you don't know what I'm
+    #   talking about, use "\1".  If you use one backreference in the
+    #   second argument, use "\2".  Etc.  It's used to extract the last
+    #   portion of your current working directory.
+    # * a regular expression match for the bit you want to chop off at the
+    #   beginning 
+    # * the string to replace the regex with in colorized prompts.  You don't
+    #   have to use color.  If you don't this argument and the next will be
+    #   the same.
+    # * the string to replace the regex with in colorless prompts.
+    case $HOSTNAME in
+    fzzt.*)
+      replace_substrings "\1" ".usr.local.google.home.rbarry"\
+           "$ESC_BOLD${ESC_GREEN}~${ESC_BASE_COL}$ESC_BOLD_OFF" "~"
+      replace_substrings "\1" \
+           ".google.src.cloud.rbarry.rbarry-get_[^n]*name"\
+           "$ESC_BOLD${ESC_GREEN}{GDBN}${ESC_BASE_COL}$ESC_BOLD_OFF" "{GDBN}"
+      replace_substrings "\1" ".google.src.cloud.rbarry.rbarry-trusted[^\/]*"\
+           "$ESC_BOLD${ESC_GREEN}{TTW}${ESC_BASE_COL}$ESC_BOLD_OFF" "{TTW}"
+      replace_substrings "\1" ".google.src.cloud.rbarry.rbarry-user_can_[^\/]*"\
+           "$ESC_BOLD${ESC_GREEN}{UCCAD}${ESC_BASE_COL}$ESC_BOLD_OFF" "{UCCAD}"
+      replace_substrings "\2" ".google.src.cloud.rbarry.rbarry-\([^\/]*\)"\
+           "$ESC_BOLD${ESC_GREEN}{\\1}${ESC_BASE_COL}$ESC_BOLD_OFF" "{\\1}"
+      ;;
+    fit-pc)
+      replace_substrings "\1" ".home.ronb"\
+           "$ESC_BOLD${ESC_GREEN}~${ESC_BASE_COL}$ESC_BOLD_OFF" "~"
+      ;;
+    box481.*)
+      replace_substrings "\1" ".home1.foodinio"\
+           "$ESC_BOLD${ESC_GREEN}~${ESC_BASE_COL}$ESC_BOLD_OFF" "~"
+      ;;
+    esac
 
-  # If none of the above clauses have matched, TRIM is all we're going to
-  # display after the hostname, so clear BASE and BASE_BNW
-  if [ $BASE == $PWD ]; then
-    BASE=""
-    BASE_BNW=""
-  fi
+    # If none of the above clauses have matched, TRIM is all we're going to
+    # display after the hostname, so clear BASE and BASE_BNW
+    if [ "$BASE" == "$PWD" ]; then
+      BASE=""
+      BASE_BNW=""
+    fi
 
-  if [ ${#TRIM} -gt 37 ]; then
-      #TRIM=`echo $TRIM|sed -e "s/^.*\(.\{37\}\)$/\\1/"`
-      #TRIM="...$TRIM"
-      TRIM=`echo $TRIM|sed -e "s/^.*\(.\{37\}\)$/...\\1/"`
-  fi
+    if [ ${#TRIM} -gt 37 ]; then
+        #TRIM=`echo $TRIM|sed -e "s/^.*\(.\{37\}\)$/\\1/"`
+        #TRIM="...$TRIM"
+        TRIM=`echo $TRIM|sed -e "s/^.*\(.\{37\}\)$/...\\1/"`
+    fi
 
-  PROMPT_COL="$PC_BASE_COL$TRIM$PC_RESET"
+    PROMPT_COL=`echo "$PC_BASE_COL$TRIM$PC_RESET" | sed -e "s/\([Gg]\)\([Oo]\)\([Oo]\)\([Gg]\)\([Ll]\)\([Ee]\)/$ESC_BOLD$ESC_BLUE\1$ESC_RED\2$ESC_BROWN\3$ESC_BLUE\4$ESC_GREEN\5$ESC_RED\6$ESC_BASE_COL$ESC_BOLD_OFF/g"`
 
-  export PROMPT_BNW="$HOST_SHORT: $BASE_BNW$TRIM> "
-  export PROMPT_COL="$PC_UNDER$PC_BASE_COL$HOST_SHORT$PC_UNDER_OFF: $BASE$PROMPT_COL> "
-  if [ $STATUS_LINE_SUPPORT == "linux" ]; then
-      export PS1="\[\e]0;$PROMPT_BNW\a\]$PROMPT_COL"
-  elif [ $STATUS_LINE_SUPPORT == "mac" ]; then
-      export PS1="\[\e]0;$PROMPT_BNW\a\]$PROMPT_COL"
-  else
-      export PS1=$PROMPT_COL
-  fi
+
+    export PROMPT_BNW="$HOST_SHORT: $BASE_BNW$TRIM> "
+    export PROMPT_COL="$PC_UNDER$PC_BASE_COL$HOST_SHORT$PC_UNDER_OFF: $BASE$PROMPT_COL> "
+    if [ $SUPPORTS_STATUS_LINE == "true" ]; then
+        export PS1="\[\e]0;$PROMPT_BNW\a\]$PROMPT_COL"
+    else
+        export PS1=$PROMPT_COL
+    fi
 }
 
 export PROMPT_COMMAND='gen_prompt_text'
@@ -187,10 +238,10 @@ export PROMPT_COMMAND='gen_prompt_text'
 #      How can I trim it down so the trap is turned off until the end of
 #      next prompt generation phase AND use $BASH_COMMAND instead of this
 #      ugly history | sed thing?  ($BASH_COMMAND, during the execution of
-#      gen_prompt_text is "gen_prompt_text")
-if [ $STATUS_LINE_SUPPORT == "linux" ]; then
-  trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD=$BASH_COMMAND;fi;echo -en "\e]0;$PROMPT_BNW$CMD\007"' DEBUG
-elif [ $STATUS_LINE_SUPPORT == "mac" ]; then
-  # The mac uses \x1B instead of \e:
-  trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD=$BASH_COMMAND;fi;echo -en "\x1B]0;$PROMPT_BNW$CMD\a"' DEBUG
+#      gen_prompt_text is "gen_prompt_text"
+if [ $SUPPORTS_STATUS_LINE == "true" ]; then
+    trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD="$BASH_COMMAND";fi;echo -en "\e]0;$PROMPT_BNW $CMD\007"' DEBUG
+    #trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD=`history 1|sed -e "s/^[ ]*[0-9]*[ ]*//g"`;fi;echo -en "\e]0;$PROMPT_BNW $CMD\007"' DEBUG
 fi
+
+
