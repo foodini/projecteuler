@@ -63,9 +63,12 @@ fit-pc)
 box481.*)
   export PC_PREFERRED=$PC_CYAN
   export ESC_PREFERRED=$ESC_CYAN
-  export HISTTIMEFORMAT=''
-  alias p4='~/bin/p4 -p ssl:$FITHOST:80 -c bluehost -u nobody'
-  export P4CLIENT=bluehost
+  export STATUS_LINE_SUPPORT=linux
+  ;;
+perforce)
+  export PC_PREFERRED=$PC_BLUE
+  export ESC_PREFERRED=$ESC_BLUE
+  export STATUS_LINE_SUPPORT=linux
   ;;
 esac
 ################################################################################
@@ -243,5 +246,3 @@ if [ $SUPPORTS_STATUS_LINE == "true" ]; then
     trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD="$BASH_COMMAND";fi;echo -en "\e]0;$PROMPT_BNW $CMD\007"' DEBUG
     #trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD=`history 1|sed -e "s/^[ ]*[0-9]*[ ]*//g"`;fi;echo -en "\e]0;$PROMPT_BNW $CMD\007"' DEBUG
 fi
-
-
