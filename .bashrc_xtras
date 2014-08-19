@@ -9,7 +9,6 @@ if [[ $TERM == "cygwin" ]]; then
 fi
 
 export P4_BINARY_LOCATION='/usr/local/bin/p4'
-export FITHOST=99.117.103.46
 
 source ~/bin/color_swatch
 
@@ -23,10 +22,6 @@ alias rerc='source ~/.bashrc_xtras'
 alias virc='vi ~/.bashrc_xtras'
 alias fxgrep='find . | xargs grep'
 alias fgrep='find . | grep'
-export FIT=ronb@$FITHOST
-export FITHOME=$FIT:/home/ronb
-export BLUE=foodinio@box481.bluehost.com
-export BLUEHOME=$BLUE:/home1/foodinio
 export EDITOR='vim'
 export GREPLOC=/bin/grep
 
@@ -56,6 +51,7 @@ perforce)
 esac
 ################################################################################
 
+source ~/.bashrc_remote
 
 case $TERM in
   xterm|screen|xterm-256color)
