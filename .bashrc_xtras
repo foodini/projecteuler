@@ -15,40 +15,26 @@ source ~/bin/color_swatch
 
 export PC_PREFERRED=$PC_WHITE
 export ESC_PREFERRED=$ESC_WHITE
+
 alias tb='timer && beep'
+#less -R preserves color and underline formatting, which I use addictively:
+alias less='less -R'
+alias rerc='source ~/.bashrc_xtras'
+alias virc='vi ~/.bashrc_xtras'
+alias fxgrep='find . | xargs grep'
+alias fgrep='find . | grep'
+export FIT=ronb@$FITHOST
+export FITHOME=$FIT:/home/ronb
+export BLUE=foodinio@box481.bluehost.com
+export BLUEHOME=$BLUE:/home1/foodinio
+export EDITOR='vim'
+export GREPLOC=/bin/grep
+
 
 #######################Per-machine configurations###############################
 case $HOSTNAME in
-rbarry-glaptop)
-  export PC_PREFERRED=$PC_BROWN
-  export ESC_PREFERRED=$ESC_BROWN
-  alias g4grep='g4 opened | cut -d\# -f1 | cut -d/ -f5- | xargs grep'
-  alias g4o='g4 opened | cut -d\# -f1 | cut -d/ -f5-'
-  export P4MERGE=/usr/bin/meld
-  export P4CLIENT=google-laptop
-  alias p4='~/bin/p4_client -p ssl:$FITHOST:1666 -c google-laptop -u ronb'
-  alias beep='~/bin/beep'  #gubuntu has /usr/bin/beep - it doesn't work
-  alias tb='timer && beep'
-  export P4_BINARY_LOCATION=~/bin/p4_client
-  export FZZT=rbarry@fzzt.sfo.corp.google.com
-  ;;
-fzzt.*)
-  export PC_PREFERRED=$PC_BLUE
-  export ESC_PREFERRED=$ESC_BLUE
-  export PATH=$PATH:~/gsutil:/hbspa/tools
-  alias g4grep='g4 opened | cut -d\# -f1 | cut -d/ -f5- | xargs grep'
-  alias g4o='g4 opened | cut -d\# -f1 | cut -d/ -f5-'
-  export P4MERGE=/usr/bin/meld
-  export P4CLIENT=google-fzzt
-  alias p4='~/bin/p4_client -p ssl:$FITHOST:1666 -c google-fzzt -u ronb'
-  alias beep='~/bin/beep'  #gubuntu has /usr/bin/beep - it doesn't work
-
-  AH_DEVEL_CELL=ib  # or whatever
-  AH_DEVEL_BIGTABLE_TYPE=mix  # please, use mix, not srv
-  ADMIN_CONSOLE_BUNDLE=blaze-bin/apphosting/client/admin_console/bundle-devel
-  export P4_BINARY_LOCATION=~/bin/p4_client
-
-  bind -x '"\eg":"/google/src/cloud/rbarry/rbarry-expand-buganizer/google3/blaze-bin/experimental/users/rbarry/expand/expand_buganizer $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
+tw-mbp-rbarry)
+  export GREPLOC=/usr/bin/grep
   ;;
 ron-desktop)
   export PC_PREFERRED=$PC_BROWN
@@ -90,19 +76,6 @@ bind -x '"\eo":"expand_scm -o $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
 bind -x '"\en":"expand_scm -c $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
 bind -x '"\eh":"expand_history $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
 
-#less -R preserves color and underline formatting, which I use addictively:
-alias less='less -R'
-
-alias rerc='source ~/.bashrc_xtras'
-alias virc='vi ~/.bashrc_xtras'
-alias fxgrep='find . | xargs grep'
-alias fgrep='find . | grep'
-export FIT=ronb@$FITHOST
-export FITHOME=$FIT:/home/ronb
-export BLUE=foodinio@box481.bluehost.com
-export BLUEHOME=$BLUE:/home1/foodinio
-export EDITOR='vim'
-
 source ~/bin/acd_func.sh
 
 LOGFILE="$HOME/bashlogs/$BASHPID"
@@ -120,9 +93,9 @@ function a {
 
 function grep {
   if [[ "$CMD" =~ '>' ]]; then
-    /bin/grep --color=auto "$@"
+    $GREPLOC --color=auto "$@"
   else
-    /bin/grep --color=always "$@"
+    $GREPLOC --color=always "$@"
   fi
 }
 
