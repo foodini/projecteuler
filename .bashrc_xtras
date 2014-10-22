@@ -20,8 +20,6 @@ alias tb='timer && beep'
 alias less='less -R'
 alias rerc='source ~/.bashrc_xtras'
 alias virc='vi ~/.bashrc_xtras'
-alias fxgrep='find . -type f | xargs grep'
-alias fgrep='find . | grep'
 export EDITOR='vim'
 export GREPLOC=/bin/grep
 
@@ -30,20 +28,31 @@ export GREPLOC=/bin/grep
 case $HOSTNAME in
 tw-mbp-rbarry)
   export GREPLOC=/usr/bin/grep
+  export PLATFORM="OSX"
   export PC_PREFERRED=$PC_GREEN
   export ESC_PREFERRED=$ESC_GREEN
+  #export PANTS_CONFIG_OVERRIDE=pants.ini.cache
+  alias idea="./pants goal idea app-proxy/server:app app-proxy/loadtest/server:bundle expandodo/server:bin expandodo/caps:macaw-caps expandodo/macaw-publishing-portal:bin expandodo/core:core expandodo/server:bin --idea-idea-version=12 --idea-source-root=build_root"
+  alias core="cd \"\$(git rev-parse --show-toplevel)\"/expandodo/core/src/main/scala/com/twitter/expandodo/"
+  alias coretest="cd \"\$(git rev-parse --show-toplevel)\"/expandodo/core/src/test/scala/com/twitter/expandodo/"
+  alias serv="cd \"\$(git rev-parse --show-toplevel)\"/expandodo/server/src/main/scala/com/twitter/expandodo/"
+  alias servtest="cd \"\$(git rev-parse --show-toplevel)\"/expandodo/server/src/test/scala/com/twitter/expandodo/"
+  alias up="cd \"\$(git rev-parse --show-toplevel)\""
   ;;
 ron-desktop)
+  export PLATFORM="WIN"
   export PC_PREFERRED=$PC_BROWN
   export ESC_PREFERRED=$ESC_BROWN
   export PATH=$PATH:$HOME/bin/cygwin
   ;;
 box481.*)
+  export PLATFORM="LINUX"
   export PC_PREFERRED=$PC_CYAN
   export ESC_PREFERRED=$ESC_CYAN
   export STATUS_LINE_SUPPORT=linux
   ;;
 perforce)
+  export PLATFORM="LINUX"
   export PC_PREFERRED=$PC_BLUE
   export ESC_PREFERRED=$ESC_BLUE
   export STATUS_LINE_SUPPORT=linux
@@ -78,17 +87,37 @@ LOGFILE="$HOME/bashlogs/$BASHPID"
 #redirected to a file.  I'm sure I'll have to make changes as I find issues.
 function a {
   if [[ "$CMD" =~ '>' ]]; then
-    ls -al --color=auto "$@"
+    ls -al "$@"
   else
-    ls -al --color=always "$@" | comify -f 4
+    if [[ "$PLATFORM" == "OSX" ]]; then
+      ls -alG "$@" | comify -f 4
+    else
+      ls -al --color=always "$@" | comify -f 4
+    fi
   fi
 }
 
 function grep {
-  if [[ "$CMD" =~ '>' ]]; then
-    $GREPLOC --color=auto "$@"
-  else
+  if [[ -t 1 ]]; then
     $GREPLOC --color=always "$@"
+  else
+    $GREPLOC --color=never "$@"
+  fi
+}
+
+function fgrep {
+  if [[ -t 1 ]]; then
+    find . | $GREPLOC --color=always "$@"
+  else
+    find . | $GREPLOC --color=never "$@"
+  fi
+}
+
+function fxgrep {
+  if [[ -t 1 ]]; then
+    find . -type f | ds | file - * | grep text | cut -f1 -d: | ds | xargs $GREPLOC --color=always "$@"
+  else
+    find . -type f | ds | file - * | grep text | cut -f1 -d: | ds | xargs "$GREPLOC" --color=never "$@"
   fi
 }
 
@@ -192,8 +221,12 @@ gen_prompt_text() {
     PROMPT_COL=`echo "$PC_BASE_COL$TRIM$PC_RESET" | sed -e "s/\([Gg]\)\([Oo]\)\([Oo]\)\([Gg]\)\([Ll]\)\([Ee]\)/$ESC_BOLD$ESC_BLUE\1$ESC_RED\2$ESC_BROWN\3$ESC_BLUE\4$ESC_GREEN\5$ESC_RED\6$ESC_BASE_COL$ESC_BOLD_OFF/g"`
 
 
-    export PROMPT_BNW="$HOST_SHORT: $BASE_BNW$TRIM> "
-    export PROMPT_COL="$PC_UNDER$PC_BASE_COL$HOST_SHORT$PC_UNDER_OFF: $BASE$PROMPT_COL> "
+    export BRANCH=`git branch 2>&1 | grep '^\*' | cut -c3-`
+    if [ "$BRANCH" != "" ]; then
+      export BRANCH="($BRANCH) "
+    fi
+    export PROMPT_BNW="$HOST_SHORT: $BRANCH$BASE_BNW$TRIM> "
+    export PROMPT_COL="$PC_UNDER$PC_BASE_COL$HOST_SHORT$PC_UNDER_OFF: $BRANCH$BASE$PROMPT_COL> "
     if [ $SUPPORTS_STATUS_LINE == "true" ]; then
         export PS1="\[\033]0;$PROMPT_BNW\a\]$PROMPT_COL"
     else
