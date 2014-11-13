@@ -23,6 +23,9 @@ alias virc='vi ~/.bashrc_xtras'
 export EDITOR='vim'
 export GREPLOC=/bin/grep
 
+bind -x '"\eo":"expand_scm -o $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
+bind -x '"\en":"expand_scm -c $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
+bind -x '"\eh":"expand_history $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
 
 #######################Per-machine configurations###############################
 case $HOSTNAME in
@@ -31,6 +34,7 @@ tw-mbp-rbarry)
   export PLATFORM="OSX"
   export PC_PREFERRED=$PC_GREEN
   export ESC_PREFERRED=$ESC_GREEN
+  export PATH="$PATH:$HOME/workspace/maven-tools/bin"
   #export PANTS_CONFIG_OVERRIDE=pants.ini.cache
   alias idea="./pants goal idea app-proxy/server:app app-proxy/loadtest/server:bundle expandodo/server:bin expandodo/caps:macaw-caps expandodo/macaw-publishing-portal:bin expandodo/core:core expandodo/server:bin --idea-idea-version=12 --idea-source-root=build_root"
   alias core="cd \"\$(git rev-parse --show-toplevel)\"/expandodo/core/src/main/scala/com/twitter/expandodo/"
@@ -38,6 +42,7 @@ tw-mbp-rbarry)
   alias serv="cd \"\$(git rev-parse --show-toplevel)\"/expandodo/server/src/main/scala/com/twitter/expandodo/"
   alias servtest="cd \"\$(git rev-parse --show-toplevel)\"/expandodo/server/src/test/scala/com/twitter/expandodo/"
   alias up="cd \"\$(git rev-parse --show-toplevel)\""
+  bind -x '"˙":"expand_history $COMP_TMP; source $COMP_TMP"'
   ;;
 ron-desktop)
   export PLATFORM="WIN"
@@ -74,10 +79,6 @@ esac
 export PATH=$PATH:~/bin
 
 export COMP_TMP="$HOME/tmp/$BASHPID.sh"
-bind -x '"\eo":"expand_scm -o $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
-bind -x '"\en":"expand_scm -c $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
-bind -x '"\eh":"expand_history $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
-
 source ~/bin/acd_func.sh
 
 LOGFILE="$HOME/bashlogs/$BASHPID"
@@ -113,12 +114,21 @@ function fgrep {
   fi
 }
 
+# I should build some more intelligence into this: fxgrep -i foo -v bar should group "-i foo" with
+# xargs and "-i bar" with find.
 function fxgrep {
   if [[ -t 1 ]]; then
-    find . -type f | ds | file - * | grep text | cut -f1 -d: | ds | xargs $GREPLOC --color=always "$@"
+    WHEN_COLOR=always
   else
-    find . -type f | ds | file - * | grep text | cut -f1 -d: | ds | xargs "$GREPLOC" --color=never "$@"
+    WHEN_COLOR=never
   fi
+  if [[ "$2" != "" ]]; then
+    FILE_FILTER="$GREPLOC $2"
+  else
+    FILE_FILTER="cat"
+  fi
+
+  for i in `find . -type f | $FILE_FILTER`; do file "$i"; done | grep text | cut -f1 -d: | ds | xargs $GREPLOC --color=$WHEN_COLOR "$1"
 }
 
 #This one exists specifically to hilight output, so why protect it from
