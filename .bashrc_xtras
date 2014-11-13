@@ -118,9 +118,9 @@ function fgrep {
 # xargs and "-i bar" with find.
 function fxgrep {
   if [[ -t 1 ]]; then
-    WHEN_COLOR=always
+    WHEN_COLOR="always"
   else
-    WHEN_COLOR=never
+    WHEN_COLOR="never"
   fi
   if [[ "$2" != "" ]]; then
     FILE_FILTER="$GREPLOC $2"
@@ -128,7 +128,7 @@ function fxgrep {
     FILE_FILTER="cat"
   fi
 
-  for i in `find . -type f | $FILE_FILTER`; do file "$i"; done | grep text | cut -f1 -d: | ds | xargs $GREPLOC --color=$WHEN_COLOR "$1"
+  for i in `find . -type f | $FILE_FILTER`; do file "$i"; done | grep text | cut -f1 -d: | ds | xargs $GREPLOC --color=$WHEN_COLOR $1
 }
 
 #This one exists specifically to hilight output, so why protect it from
