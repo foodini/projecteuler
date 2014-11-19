@@ -117,18 +117,32 @@ function fgrep {
 # I should build some more intelligence into this: fxgrep -i foo -v bar should group "-i foo" with
 # xargs and "-i bar" with find.
 function fxgrep {
+  FILE_FILTERS=()
+  LINE_FILTERS=()
+  FOUND_DELIMITER="false"
+  for i in $@; do
+    if [[ $FOUND_DELIMITER == "false" ]]; then
+      LINE_FILTERS+=($i)
+      if [[ ${i:0:1} != "-" ]]; then
+        FOUND_DELIMITER="true"
+      fi
+    else
+      FILE_FILTERS+=($i)
+    fi
+  done
+
   if [[ -t 1 ]]; then
     WHEN_COLOR="always"
   else
     WHEN_COLOR="never"
   fi
   if [[ "$2" != "" ]]; then
-    FILE_FILTER="$GREPLOC $2"
+    FILE_FILTER="$GREPLOC ${FILE_FILTERS[@]}"
   else
     FILE_FILTER="cat"
   fi
 
-  for i in `find . -type f | $FILE_FILTER`; do file "$i"; done | grep text | cut -f1 -d: | ds | xargs $GREPLOC --color=$WHEN_COLOR $1
+  for i in `find . -type f | $FILE_FILTER`; do file "$i"; done | grep text | cut -f1 -d: | ds | xargs $GREPLOC --color=$WHEN_COLOR ${LINE_FILTERS[@]}
 }
 
 #This one exists specifically to hilight output, so why protect it from
