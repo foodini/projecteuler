@@ -123,11 +123,13 @@ function fxgrep {
   for i in $@; do
     if [[ $FOUND_DELIMITER == "false" ]]; then
       LINE_FILTERS+=($i)
+      echo "added $i to LINE_FILTERS"
       if [[ ${i:0:1} != "-" ]]; then
         FOUND_DELIMITER="true"
       fi
     else
       FILE_FILTERS+=($i)
+      echo "added $i to FILE_FILTERS"
     fi
   done
 
@@ -136,11 +138,15 @@ function fxgrep {
   else
     WHEN_COLOR="never"
   fi
-  if [[ "$2" != "" ]]; then
+  if [[ "${FILE_FILTERS[@]}" != "" ]]; then
     FILE_FILTER="$GREPLOC ${FILE_FILTERS[@]}"
   else
     FILE_FILTER="cat"
   fi
+
+  echo "FILE_FILTER:    $FILE_FILTER"
+  echo "FILE_FILTERS[]: ${FILE_FILTERS[@]}"
+  echo "LINE_FILTERS[]: ${LINE_FILTERS[@]}"
 
   for i in `find . -type f | $FILE_FILTER`; do file "$i"; done | grep text | cut -f1 -d: | ds | xargs $GREPLOC --color=$WHEN_COLOR ${LINE_FILTERS[@]}
 }
