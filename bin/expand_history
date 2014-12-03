@@ -1,4 +1,10 @@
-#!/opt/twitter/bin/python
+#!/usr/bin/env python
+
+#TODO: add quoted, ticked, and backticked arguments. i.e., ls^H should match
+#      vi `ls | grep foo`.... and matches should include their quotings.
+#TODO: add logic to recognize certain three-token subcommands like:
+#      ./pants goal clean-all, so that ./pants commands will only allow their
+#      third argument token to match other .pants commands' third tokens.
 
 import os
 import re
@@ -6,8 +12,8 @@ import sys
 
 import expand
 
-#Is there a way to make this work without requiring the user to have a
-#"history -a" in their bind command?
+# Is there a way to make this work without requiring the user to have a
+# "history -a" in their bind command?
 
 if len(sys.argv) != 2:
   sys.stderr.write('usage: %s [tmp_file_name]\n' % sys.argv[0])
@@ -21,25 +27,33 @@ history_file = os.environ['HOME'] + '/.bash_history'
 tmp_file = os.environ['HOME'] + '/tmp/expand_history.tmp'
 token0 = expander.get_token(0)
 re_token_finder = re.compile('%s\S*' % token_to_expand)
+#match tokens of one or more non-whitespace characters:
 re_tokenizer = re.compile('\S+')
 potential_matches = []
 token_offset = expander.get_token_offset()
 
 for line in open(history_file):
+  #If the history entry begins with the same command as the current command
+  #line, then check the entry for a match.
   if line.find(expander.get_token(0)) == 0:
+    #Get all whitespace-delimited tokens:
     candidate_list = re.findall(re_tokenizer, line)
+    #If the current command is on the first or second token, only match with
+    #the first or second token from the history file.
     if token_offset<=1:
       if len(candidate_list) <= token_offset:
-	candidate_list = []
+        candidate_list = []
       else:
-	candidate_list = [candidate_list[token_offset]]
+        candidate_list = [candidate_list[token_offset]]
+    #If we're at or beyond the third token, you can potentiall match any token
+    #from the history entry, so stick 'em all in the candidate list.
     else:
       candidate_list = candidate_list[2:]
 
     for token in candidate_list:
       match = re.match(re_token_finder, token)
       if match:
-	potential_matches.append(match.group(0))
+        potential_matches.append(match.group(0))
 
 potential_matches = sorted(set(potential_matches))
 num_matches = len(potential_matches)
@@ -52,7 +66,10 @@ common_base = expand.get_common_base(potential_matches)
 
 if num_matches > 1:
   selected_option = expander.get_selected_option(potential_matches, common_base)
+  print("selected_option: %s" % selected_option)
   if selected_option > -1:
-    potential_matches = [potential_matches[selected_option]]
+    expander.update_command_line(potential_matches[selected_option])
+  else:
+    expander.update_command_line(common_base)
 
-expander.display(common_base, common_base, potential_matches)
+

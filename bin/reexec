@@ -1,4 +1,4 @@
-#!/opt/twitter/bin/python
+#!/usr/bin/env python
 
 #TODO
 # * Remove the requirement that the file be executed.  You need to be able
@@ -27,17 +27,17 @@ def execute(cmd):
     for event in events:
       (rfd,event) = event
       if event & select.POLLIN:
-	if rfd == tsk.stdout.fileno():
-	  line = tsk.stdout.readline()
-	  if len(line) > 0:
-	    print line[:-1]
-	if rfd == tsk.stderr.fileno():
-	  line = tsk.stderr.readline()
-	  if len(line) > 0:
-	    print line[:-1]
+        if rfd == tsk.stdout.fileno():
+          line = tsk.stdout.readline()
+          if len(line) > 0:
+            print line[:-1]
+        if rfd == tsk.stderr.fileno():
+          line = tsk.stderr.readline()
+          if len(line) > 0:
+            print line[:-1]
       if event & select.POLLHUP:
-	poll.unregister(rfd)
-	pollc = pollc - 1
+        poll.unregister(rfd)
+        pollc = pollc - 1
       if pollc > 0: events = poll.poll()
   sys.stdout.flush()
   tsk.wait()
@@ -56,7 +56,7 @@ def which(program):
       path = path.strip('"')
       exe_file = os.path.join(path, program)
       if is_exe(exe_file):
-	return exe_file
+        return exe_file
 
   return None
 
@@ -68,4 +68,5 @@ while True:
   if cur_mod_time > prev_mod_time:
     execute(sys.argv[1:])
   prev_mod_time = cur_mod_time
+  print prev_mod_time
   time.sleep(1)

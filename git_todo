@@ -1,4 +1,7 @@
 HIGH priority
+* What's going on with the a() func in mac? Piping it to comify blows away
+  color. Make sure fixes are tested on all platforms.
+* Get bindings working on the mac.
 * Create an expand module for git
 * rewrite color_swatch to do layout dynamically. I'd like to have it show all
   valid combinations for a particular terminal.
@@ -9,6 +12,8 @@ MEDIUM priority
 * Pausing (in timer) doesn't work in OSX. XOFF doesn't prevent the process from
   being scheduled as it does in linux and in cygwin - it just buffers its output
   indefinitely.
+* Make history completion cd-aware, completing to any directory that you've
+  ever been _in_ relative to "$PWD/[argument token]"
 
 LOW priority
 * Should wclive be able to live-track multiple files?

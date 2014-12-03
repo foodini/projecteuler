@@ -262,18 +262,13 @@ gen_prompt_text() {
     else
         export PS1=$PROMPT_COL
     fi
-    
-    kill -9 `cat $LOGFILE`
+
+    #kill -9 `cat $LOGFILE`
 }
 
 export PROMPT_COMMAND='gen_prompt_text'
 
-#TODO: The trap fires a number of times in the execution of a command.
-#      How can I trim it down so the trap is turned off until the end of
-#      next prompt generation phase AND use $BASH_COMMAND instead of this
-#      ugly history | sed thing?  ($BASH_COMMAND, during the execution of
-#      gen_prompt_text is "gen_prompt_text"
 if [ $SUPPORTS_STATUS_LINE == "true" ]; then
-    trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD="$BASH_COMMAND";(timer2 -p "$PROMPT_BNW" -u -q & echo $! > $LOGFILE);fi;echo -en "\033]0;$PROMPT_BNW $CMD\007"' DEBUG
-    #trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD="$BASH_COMMAND";fi;echo -en "\033]0;$PROMPT_BNW $CMD\007"' DEBUG
+    #trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD="$BASH_COMMAND";(timer2 -p "$PROMPT_BNW" -u -q & echo $! > $LOGFILE);fi;echo -en "\033]0;$PROMPT_BNW $CMD\007"' DEBUG
+    trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD="$BASH_COMMAND";fi;echo -en "\033]0;$PROMPT_BNW $CMD\007"' DEBUG
 fi

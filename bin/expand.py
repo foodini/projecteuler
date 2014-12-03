@@ -2,9 +2,9 @@
 # line.
 
 # TODO: make the underlining a little more friendly for anyone who doesn't have
-#	a terminal that supports it.  It should work easily with the tools that
-#	already exist, but shouldn't depend upon them, in case someone wants to
-#	pick up this tool set, but not everything else.
+# a terminal that supports it.  It should work easily with the tools that
+# already exist, but shouldn't depend upon them, in case someone wants to
+# pick up this tool set, but not everything else.
 
 import os
 import sys
@@ -36,23 +36,23 @@ def _format_option(option, prefix_len, option_number):
   if isinstance(option, tuple):
     option_name, option_description = option
     return ("%4s %s\033[4m%s\033[24m : %s" % (
-	option_number, option_name[:prefix_len],
-	option_name[prefix_len:], option_description))
+        option_number, option_name[:prefix_len],
+        option_name[prefix_len:], option_description))
   else:
     return ("%4s %s\033[4m%s\033[24m" % (
-	option_number, option[:prefix_len], option[prefix_len:]))
+        option_number, option[:prefix_len], option[prefix_len:]))
 
 # When you are editing a command line, the state of your terminal is a bit
 # wonky: it's in raw mode.  Normally, when you hit enter, the terminal is
 # switched to cooked mode, so under normal circumstances, your scripts are run
-# with the tty cooked.	When your prompt is generated and control is handed
+# with the tty cooked. When your prompt is generated and control is handed
 # back to you, your terminal is set back to raw again and this tennis match
 # continues forever.  The world is a very happy place when we are all blissfully
 # unaware of this psychotic mess.
 #
 # Unfortunately, bind doesn't give target programs the same consideration.  When
 # you hit [Alt-O] (or whatever you've used to activate your script), you stay
-# in raw mode - the mode that the commandline editor lives in.	If we don't
+# in raw mode - the mode that the commandline editor lives in. If we don't
 # manually switch you to cooked, you will not be able to enter any input.  While
 # we're at it, we have to force the terminal to do echo for us.  If we don't
 # revert these changes when we're done, our command line editor will be a mess
@@ -90,8 +90,8 @@ def get_common_base(strings):
     while True:
       current_char = next(iters[0])
       for i in iters[1:]:
-	if next(i) != current_char:
-	  return common_base
+        if next(i) != current_char:
+          return common_base
       common_base += current_char
   except:
     return common_base
@@ -108,10 +108,10 @@ def filter_for_matches(preamble, candidates):
   return matches
 
 # There's no way for a child process to affect the environment of a parent
-# process, and in order to change READLINE_LINE or READLINE_COUNT (the env
-# variables that we have to change to affect the command line,) I write a file
-# that the parent (bash) process can source to make these changes.  The sourcing
-# of that file is built into my bind command.
+# process, so to change READLINE_LINE or READLINE_POINT (the env variables that
+# we have to change to affect the command line,) I write a file that the parent
+# (bash) process can source to make these changes.  The sourcing of that file is
+# built into the bind command.
 #
 # I open this file early so that it is guaranteed to be empty if processing
 # terminates before generating any updates.  Otherwise, I'll end up sourcing an
@@ -121,14 +121,12 @@ def filter_for_matches(preamble, candidates):
 
 class Expand():
   def __init__(self, tmp_file_name):
-    #TODO: make the tmp file based either upon a command line arg or PPID.
-    #	   Note that this means that it needs to be a one-off.
     self.tmp_file_handle = open(tmp_file_name, "w")
 
     self.command_tokens = os.environ['READLINE_LINE'].split(' ')
     self.command_point = int(os.environ['READLINE_POINT'])
     self.token_offset = _get_token_offset(self.command_tokens,
-					 self.command_point)
+        self.command_point)
     self.token_to_expand = self.command_tokens[self.token_offset]
     self.selected_option = -1
 
@@ -136,9 +134,9 @@ class Expand():
     if delimiter_location > -1:
       selected_option = self.token_to_expand[delimiter_location+1:]
       if len(selected_option):
-	self.selected_option = int(selected_option)
-	self.token_to_expand = self.token_to_expand[:delimiter_location]
-	self.command_tokens[self.token_offset] = self.token_to_expand
+        self.selected_option = int(selected_option)
+        self.token_to_expand = self.token_to_expand[:delimiter_location]
+        self.command_tokens[self.token_offset] = self.token_to_expand
 
   def __del__(self):
     self.tmp_file_handle.close()
@@ -153,7 +151,7 @@ class Expand():
     else:
       return self.token_to_expand
 
-  #TODO: Rename this to get_token_index
+  #TODO: Rename this to get_token_index. (Needs to change in clients, as well.)
   def get_token_offset(self, index=None):
     return self.token_offset
 
@@ -171,7 +169,7 @@ class Expand():
     sys.stdout.flush()
 
     # https://groups.google.com/forum/?fromgroups#!searchin/gnu.bash.bug/bind/
-    #	    gnu.bash.bug/0WsXBN1Amb4/zxbwQb7H-e0J
+    #     gnu.bash.bug/0WsXBN1Amb4/zxbwQb7H-e0J
     #More helpful? http://linux.about.com/od/ttl_howto/a/hwtttl15t04_2.htm
     settings = _get_terminal_settings()
     try:
@@ -186,23 +184,12 @@ class Expand():
       return -1
     return int(match.group(0))
 
-  def display(self, expanded_token, common_base, matching_candidates):
-    if self.command_tokens[self.token_offset] != expanded_token:
-      self.command_tokens[self.token_offset] = expanded_token
-      readline_line_command = (
-	  'export READLINE_LINE=\'' + ' '.join(self.command_tokens) + '\'')
-      self.append_output(readline_line_command + '\n')
-    '''
-    else:
-      prefix_len = len(common_base)
-      if matching_candidates:
-	self._append_prompt_line()
-	option_number = 0
-	for candidate in matching_candidates:
-	  self.append_output("echo '%s'\n" % (
-	      _format_option(candidate, prefix_len, option_number)))
-	  option_number += 1
-    '''
+  def update_command_line(self, expanded_token):
+    print("expanded_token: " + expanded_token)
+    self.command_tokens[self.token_offset] = expanded_token
+    readline_line_command = (
+        'export READLINE_LINE=\'' + ' '.join(self.command_tokens) + '\'')
+    self.append_output(readline_line_command + '\n')
     new_point = len(' '.join(self.command_tokens[:self.token_offset+1]))
     self.append_output('export READLINE_POINT=%s\n' % new_point)
 

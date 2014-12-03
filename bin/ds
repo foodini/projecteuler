@@ -1,4 +1,4 @@
-#!/opt/twitter/bin/python
+#!/usr/bin/env python
 
 import fileinput
 import re
@@ -6,4 +6,4 @@ import re
 regexp = re.compile(" ")
 
 for line in fileinput.input():
-    print re.sub(regexp, "\\ ", line)
+    print re.sub(regexp, "\\ ", line.strip())
