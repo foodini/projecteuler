@@ -248,20 +248,22 @@ gen_prompt_text() {
         TRIM=`echo $TRIM|sed -e "s/^.*\(.\{37\}\)$/...\\1/"`
     fi
 
-    PROMPT_COL=`echo "$PC_BASE_COL$TRIM$PC_RESET" | sed -e "s/\([Gg]\)\([Oo]\)\([Oo]\)\([Gg]\)\([Ll]\)\([Ee]\)/$ESC_BOLD$ESC_BLUE\1$ESC_RED\2$ESC_BROWN\3$ESC_BLUE\4$ESC_GREEN\5$ESC_RED\6$ESC_BASE_COL$ESC_BOLD_OFF/g"`
+    PROMPT_COL="$PC_BASE_COL$TRIM$PC_RESET"
 
-
-    export BRANCH=`git branch 2>&1 | grep '^\*' | cut -c3-`
+    BRANCH=`git branch 2>&1 | grep '^\*' | cut -c3-`
     if [ "$BRANCH" != "" ]; then
       export BRANCH="($BRANCH) "
     fi
-    export PROMPT_BNW="$HOST_SHORT: $BRANCH$BASE_BNW$TRIM> "
-    export PROMPT_COL="$PC_UNDER$PC_BASE_COL$HOST_SHORT$PC_UNDER_OFF: $BRANCH$BASE$PROMPT_COL> "
+    TIME=`date +%I:%M`
+    export PROMPT_BNW="$HOST_SHORT $TIME $BRANCH$BASE_BNW$TRIM> "
+    export PROMPT_COL="$PC_UNDER$PC_BASE_COL$HOST_SHORT$PC_UNDER_OFF $TIME $BRANCH$BASE$PROMPT_COL> "
     if [ $SUPPORTS_STATUS_LINE == "true" ]; then
         export PS1="\[\033]0;$PROMPT_BNW\a\]$PROMPT_COL"
     else
         export PS1=$PROMPT_COL
     fi
+    
+    kill -9 `cat $LOGFILE`
 }
 
 export PROMPT_COMMAND='gen_prompt_text'
@@ -272,6 +274,6 @@ export PROMPT_COMMAND='gen_prompt_text'
 #      ugly history | sed thing?  ($BASH_COMMAND, during the execution of
 #      gen_prompt_text is "gen_prompt_text"
 if [ $SUPPORTS_STATUS_LINE == "true" ]; then
-    trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD="$BASH_COMMAND";fi;echo -en "\033]0;$PROMPT_BNW $CMD\007"' DEBUG
-    #trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD=`history 1|sed -e "s/^[ ]*[0-9]*[ ]*//g"`;fi;echo -en "\e]0;$PROMPT_BNW $CMD\007"' DEBUG
+    trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD="$BASH_COMMAND";(timer2 -p "$PROMPT_BNW" -u -q & echo $! > $LOGFILE);fi;echo -en "\033]0;$PROMPT_BNW $CMD\007"' DEBUG
+    #trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD="$BASH_COMMAND";fi;echo -en "\033]0;$PROMPT_BNW $CMD\007"' DEBUG
 fi

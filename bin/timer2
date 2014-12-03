@@ -1,0 +1,80 @@
+#!/opt/twitter/bin/python
+
+import os
+import sys
+import time
+
+direction = "down"
+input_seconds = -1
+multipliers = [7,24,60,60]
+to_stdout = True
+prompt = ""
+
+to_status_line = False
+status_line = False
+if (os.environ['TERM'] == "xterm" or os.environ['TERM'] == "screen" or
+    os.environ['TERM'] == "xterm-256color"):
+  to_status_line = True
+
+sys.argv.pop(0)
+while len(sys.argv):
+  arg = sys.argv.pop(0)
+  if arg[0] == "-":
+    if arg == "-u":
+      direction = "up"
+    if arg == "-p":
+      prompt = sys.argv.pop(0)
+    if arg == "-q":
+      to_stdout = False
+  else:
+    requested_time = arg.split(":")
+    input_seconds = int(requested_time.pop(0))
+    while requested_time != []:
+      input_seconds *= multipliers.pop()
+      input_seconds += int(requested_time.pop(0))
+
+last_loop_time = time.time()
+start_time = last_loop_time
+end_time = 0
+#If no time value was provided, choose a default, based upon the direction.
+if (input_seconds >= 0):
+  end_time = last_loop_time + input_seconds
+else:
+  if direction == "down":
+    end_time = last_loop_time + 25 * 60  # 25 minutes, for historical reasons
+  else:
+    end_time = last_loop_time + 100*365*24*60*60
+
+def divmod(val, divisor):
+  return (val/divisor, val%divisor)
+
+while True:
+  current_time = time.time()
+
+  if (direction == "down"):
+    display_seconds = int(end_time - current_time + 0.5)
+    if display_seconds < 0: display_seconds = 0
+  else:
+    display_seconds = int(current_time - start_time + 0.5)
+
+  minutes, seconds = divmod(display_seconds, 60)
+  hours, minutes = divmod(minutes, 60)
+  days, hours = divmod(hours, 24)
+
+  display_string = ''
+  if display_seconds > 86400: display_string += ("%02d:" % days)
+  if display_seconds >  3600: display_string += ("%02d:" % hours)
+  display_string += "%02d:%02d" % (minutes, seconds)
+
+  if to_stdout:
+    sys.stdout.write("\r%s   \b\b\b" % display_string)
+  if to_status_line:
+    sys.stdout.write("\033]0;%s %s\a" % (display_string, prompt))
+
+  if current_time < end_time:
+    sys.stdout.flush()
+  else:
+    sys.stdout.write("\n")
+    sys.exit()
+
+  time.sleep(1)
