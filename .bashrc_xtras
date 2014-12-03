@@ -179,6 +179,21 @@ replace_substrings() {
     fi
 }
 
+start_timer() {
+  if [ ! -e $LOGFILE ]; then
+    CMD=`history | tail -1 | tr -s " " | cut -f2-1000 -d" "`
+    timer2 -p "$PROMPT_BNW $CMD" -u -q & echo $! > $LOGFILE
+  fi
+}
+
+stop_timer() {
+  if [ -e $LOGFILE ]; then
+    disown `cat $LOGFILE`
+    kill -9 `cat $LOGFILE`
+    rm -f $LOGFILE
+  fi
+}
+
 gen_prompt_text() {
     LAST_RETURN_VAL=$?
     #echo $LAST_RETURN_VAL >> $LOGFILE
@@ -263,12 +278,11 @@ gen_prompt_text() {
         export PS1=$PROMPT_COL
     fi
 
-    #kill -9 `cat $LOGFILE`
+    stop_timer
 }
 
 export PROMPT_COMMAND='gen_prompt_text'
 
 if [ $SUPPORTS_STATUS_LINE == "true" ]; then
-    #trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD="$BASH_COMMAND";(timer2 -p "$PROMPT_BNW" -u -q & echo $! > $LOGFILE);fi;echo -en "\033]0;$PROMPT_BNW $CMD\007"' DEBUG
-    trap 'if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then CMD=""; else CMD="$BASH_COMMAND";fi;echo -en "\033]0;$PROMPT_BNW $CMD\007"' DEBUG
+    trap 'start_timer' DEBUG
 fi
