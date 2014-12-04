@@ -187,35 +187,13 @@ debug_echo() {
   echo -en ""
 }
 
-#This was much simpler when I just started timer2 in the background in the
-#DEBUG trap, but it turns out that the trap doesn't return to the command line
-#until all backgrounded processes have finished. It works fine until your
-#command line tries to pipe two commands together. You never get the prompt
-#back, and I don't think the third command in the pipe ever executes.
-
-#The timer_manager should really be python. I get all sorts of timing issues
-#off this thing, where the file disappears while the manager is running.
-
-timer_manager() {
-  while true; do
-    if [ -e "$LOGFILE" ]; then
-      NOW=`date +%s`
-      TIMESTAMP=`stat -r $LOGFILE | cut -f10 -d" "`
-      (( DIFF=NOW - TIMESTAMP ))
-      FORMATTED_TIME=`time_format $DIFF`
-      STATUS_LINE=`cat $LOGFILE 2> /dev/null`
-      if [ -e "$LOGFILE" ]; then
-        echo -en "\033]0;$FORMATTED_TIME $STATUS_LINE\007"
-      fi
-    fi
-    sleep 1
-  done
-}
-
 if [ "$TIMER_PID" != "" ]; then
   kill -9 $TIMER_PID
 fi
-timer_manager & export TIMER_PID=$!
+if [ -e "$LOGFILE" ]; then
+  rm -f $LOGFILE
+fi
+bash_timer_manager $LOGFILE & export TIMER_PID=$!
 
 start_timer() {
   debug_echo start_timer

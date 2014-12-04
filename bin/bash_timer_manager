@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import time
+
+def read(file):
+  try:
+    f = open(file, "r")
+    return f.read()
+  except:
+    return None
+
+def stat(file):
+  try:
+    ctime = os.stat(file).st_ctime
+    return int(time.time() - ctime)
+  except:
+    return None
+
+filename = sys.argv[1]
+
+def divmod(val, divisor):
+  return (val/divisor, val%divisor)
+
+while True:
+  time.sleep(1)
+  current_time = time.time()
+
+  prompt = read(filename)
+  if (prompt):
+    age = stat(filename)
+    if (age):
+      minutes, seconds = divmod(age, 60)
+      hours, minutes = divmod(minutes, 60)
+      days, hours = divmod(hours, 24)
+
+      display_string = ''
+      if days  > 0: display_string += ("%02d:" % days)
+      if hours > 0: display_string += ("%02d:" % hours)
+      display_string += "%02d:%02d" % (minutes, seconds)
+
+      sys.stdout.write("\033]0;%s %s\a" % (display_string, prompt))
+      sys.stdout.flush()
+
