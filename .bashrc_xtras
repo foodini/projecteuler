@@ -217,7 +217,6 @@ start_timer() {
 
 stop_timer() {
   if [ -e "$LOGFILE" ]; then
-    echo "removing $LOGFILE"
     rm -f $LOGFILE
   fi
 }
