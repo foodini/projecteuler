@@ -8,7 +8,6 @@ HIGH priority
 * fxgrep really needs to take a root directory. (It currently starts at .)
 
 MEDIUM priority
-* Get the shared code in comify and a in one place.
 * Pausing (in timer) doesn't work in OSX. XOFF doesn't prevent the process from
   being scheduled as it does in linux and in cygwin - it just buffers its output
   indefinitely.
@@ -16,10 +15,8 @@ MEDIUM priority
   ever been _in_ relative to "$PWD/[argument token]"
 
 LOW priority
+* Get the shared code in comify and a in one place.
 * Should wclive be able to live-track multiple files?
-* I need to build options into the bash function 'a' to allow you to override
-  its choice of color.
-* Get prompts colored across all machines.
 
 Completion
 * Break completion out into its own repository.

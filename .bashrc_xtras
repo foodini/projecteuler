@@ -15,7 +15,8 @@ source ~/bin/color_swatch
 export PC_PREFERRED=$PC_WHITE
 export ESC_PREFERRED=$ESC_WHITE
 
-alias tb='timer && beep'
+alias tb='TIMER="" ~/bin/timer && beep'
+alias timer='TIMER="" ~/bin/timer'
 #less -R preserves color and underline formatting, which I use addictively:
 alias less='less -R'
 alias rerc='source ~/.bashrc_xtras'
@@ -195,33 +196,33 @@ if [ -e "$LOGFILE" ]; then
 fi
 bash_timer_manager $LOGFILE & export TIMER_PID=$!
 
+TIMER="true"
+
 start_timer() {
-  debug_echo start_timer
   if [ ! -e "$LOGFILE" ]; then
-    debug_echo start_timer $LOGFILE does not exist
     CMD=`history | tail -1 | tr -s " " | cut -f2-1000 -d" "`
-    echo "$PROMPT_BNW $CMD" > $LOGFILE
-    if [ -e "$LOGFILE" ]; then
-      debug_echo start_time $LOGFILE now exists
+    #So you can silence the timer like this:
+    #  TIMER="" sleep 5
+    if [ "$TIMER" == "true" ]; then
+      echo "$PROMPT_BNW $CMD" > $LOGFILE
     else
-      debug_echo start_time $LOGFILE IS MISSING!!!!!
+      #Given the command:
+      # TIMER="" sleep 5
+      #the timer was started BEFORE the command was processed, so we need to
+      #kill the timer.
+      stop_timer
     fi
   fi
-  debug_echo start_timer done
 }
 
 stop_timer() {
-  debug_echo stop_timer
   if [ -e "$LOGFILE" ]; then
-    debug_echo stop_timer $LOGFILE exists
+    echo "removing $LOGFILE"
     rm -f $LOGFILE
   fi
-  debug_echo stop_timer done
 }
 
 gen_prompt_text() {
-    debug_echo gen_prompt_text
-
     LAST_RETURN_VAL=$?
     #echo $LAST_RETURN_VAL >> $LOGFILE
     #date >> "$LOGFILE"
@@ -306,11 +307,10 @@ gen_prompt_text() {
     fi
 
     stop_timer
-    debug_echo gen_prompt_text done
 }
 
 export PROMPT_COMMAND='gen_prompt_text'
 
 if [ $SUPPORTS_STATUS_LINE == "true" ]; then
-    trap 'start_timer; debug_echo trap done' DEBUG
+    trap 'start_timer' DEBUG
 fi

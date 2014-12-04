@@ -1,67 +1,80 @@
 #!/usr/bin/env python
 
-import time
-import sys
 import os
+import sys
+import time
 
+direction = "down"
+input_seconds = -1
 multipliers = [7,24,60,60]
+to_stdout = True
+prompt = ""
 
+to_status_line = False
 status_line = False
 if (os.environ['TERM'] == "xterm" or os.environ['TERM'] == "screen" or
     os.environ['TERM'] == "xterm-256color"):
-  status_line = True
+  to_status_line = True
 
-if len(sys.argv) == 1:
-  seconds = 25*60
-else:
-  requested_time = sys.argv[1].split(":")
-  requested_time.reverse()
-  seconds = int(requested_time.pop())
-  while requested_time != []:
-    seconds *= multipliers.pop()
-    seconds += int(requested_time.pop())
+sys.argv.pop(0)
+while len(sys.argv):
+  arg = sys.argv.pop(0)
+  if arg[0] == "-":
+    if arg == "-u":
+      direction = "up"
+    if arg == "-p":
+      prompt = sys.argv.pop(0)
+    if arg == "-q":
+      to_stdout = False
+  else:
+    requested_time = arg.split(":")
+    input_seconds = int(requested_time.pop(0))
+    while requested_time != []:
+      input_seconds *= multipliers.pop()
+      input_seconds += int(requested_time.pop(0))
 
 last_loop_time = time.time()
-end_time = last_loop_time + seconds
+start_time = last_loop_time
+end_time = 0
+#If no time value was provided, choose a default, based upon the direction.
+if (input_seconds >= 0):
+  end_time = last_loop_time + input_seconds
+else:
+  if direction == "down":
+    end_time = last_loop_time + 25 * 60  # 25 minutes, for historical reasons
+  else:
+    end_time = last_loop_time + 100*365*24*60*60
 
 def divmod(val, divisor):
   return (val/divisor, val%divisor)
 
-print "^S/^Q to pause/resume"
-
 while True:
   current_time = time.time()
 
-  elapsed = current_time - last_loop_time
-  if elapsed > 3:
-    #I don't have a way to trap ^S/^Q, so I'm going to assume that if
-    #the loop hasn't been serviced in more than 3 seconds, it's
-    #because we've been paused, and I'm going to add the difference
-    #back into the timer:
-    end_time += elapsed - 1
+  if (direction == "down"):
+    display_seconds = int(end_time - current_time + 0.5)
+    if display_seconds < 0: display_seconds = 0
+  else:
+    display_seconds = int(current_time - start_time + 0.5)
 
-  last_loop_time = current_time
-
-  remaining = int(end_time - current_time + 0.5)
-  if remaining < 0: remaining = 0
-
-  minutes, seconds = divmod(remaining, 60)
+  minutes, seconds = divmod(display_seconds, 60)
   hours, minutes = divmod(minutes, 60)
   days, hours = divmod(hours, 24)
 
-  time_string = ''
-  if remaining >= 86400: time_string += ("%02d:" % days)
-  if remaining >= 3600:  time_string += ("%02d:" % hours)
-  time_string += "%02d:%02d" % (minutes, seconds)
+  display_string = ''
+  if display_seconds > 86400: display_string += ("%02d:" % days)
+  if display_seconds >  3600: display_string += ("%02d:" % hours)
+  display_string += "%02d:%02d" % (minutes, seconds)
 
-  if status_line: sys.stdout.write("\033]0;timer: %s\a" % time_string)
+  if to_stdout:
+    sys.stdout.write("\r%s   \b\b\b" % display_string)
+  if to_status_line:
+    sys.stdout.write("\033]0;%s %s\a" % (display_string, prompt))
 
-  sys.stdout.write("\r%s   \b\b\b" % time_string)
-
-  if remaining > 0:
+  if current_time < end_time:
     sys.stdout.flush()
   else:
     sys.stdout.write("\n")
-    sys.exit(0)
+    sys.exit()
 
   time.sleep(1)

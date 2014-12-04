@@ -3,11 +3,12 @@
 import os
 import sys
 import time
+import re
 
 def read(file):
   try:
     f = open(file, "r")
-    return f.read()
+    return f.read().strip()
   except:
     return None
 
@@ -24,7 +25,6 @@ def divmod(val, divisor):
   return (val/divisor, val%divisor)
 
 while True:
-  time.sleep(1)
   current_time = time.time()
 
   prompt = read(filename)
@@ -40,6 +40,7 @@ while True:
       if hours > 0: display_string += ("%02d:" % hours)
       display_string += "%02d:%02d" % (minutes, seconds)
 
-      sys.stdout.write("\033]0;%s %s\a" % (display_string, prompt))
+      sys.stdout.write("\033]0;%s %s\007" % (display_string, prompt))
       sys.stdout.flush()
 
+  time.sleep(1)
