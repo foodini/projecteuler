@@ -1,14 +1,29 @@
+Maybe the correct solution is to quit using PS1 for the status line. I could
+just use the timer manager. Whenever a prompt is generated, PROMPT_BNW could be
+pushed out to the LOGFILE (which should be renamed). The first line could be
+the prompt and the second could be the currently-running command. The manager
+would either print the elapsing time (if a second time were present) or the
+previous elapsed time (if only one line is present because a prompt has been
+generated and the debug trap hasn't fired.)
+
 HIGH priority
-* Get bindings working on the mac.
-* Create an expand module for git
 * rewrite color_swatch to do layout dynamically. I'd like to have it show all
   valid combinations for a particular terminal.
 * fxgrep really needs to take a root directory. (It currently starts at .)
+* When you're using a terminal that supports the status line, stop refreshing
+  the status line in prompt_command. Right now, all its doing is deleting the
+  elapsed time.
+* It would be nice if the elapsed time were somehow still available after the
+  command completed:
+  * You could just update the status line, removing the commandline, but I like
+    the fact that the time's presence indicates that it is still running. You
+    could put an elapsING time in parenthesis and an elapsED time bare?
+  * Print the elapsed time to the terminal (if it exceeds some threshhold?)
+    UGLY!
+  * Nasty solution: have the timer process update a file that is read during
+    prompt generation. 
 
 MEDIUM priority
-* Pausing (in timer) doesn't work in OSX. XOFF doesn't prevent the process from
-  being scheduled as it does in linux and in cygwin - it just buffers its output
-  indefinitely.
 * Make history completion cd-aware, completing to any directory that you've
   ever been _in_ relative to "$PWD/[argument token]"
 
@@ -20,13 +35,9 @@ Completion
 * Break completion out into its own repository.
 * What about adding support for the directories you've visited... Could be done
   by having the prompt_command stash it somewhere.
-* What if someone - out of habit - starts typing to resolve the ambiguity?  What
-  would happen if I put their keystroke(s) into the completion and returned
-  them to the prompt?
 * Insert a space at the end of successful completions.
 * Columnize output.
 * Three columns for expand_scm: file, changelist#, action.
-* Why does the options selection list get printed again when you hit ^C?
 * make the "option : description" printing order configurable so changelist
   id can come before filespec.
 * I would really like to be able to match on the name of the file, so /a/b/cd

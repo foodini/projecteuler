@@ -38,8 +38,9 @@ tw-mbp-rbarry)
   export PLATFORM="OSX"
   export PC_PREFERRED=$PC_GREEN
   export ESC_PREFERRED=$ESC_GREEN
-  export PATH="$PATH:$HOME/workspace/maven-tools/bin"
+  export PATH="$PATH:$HOME/workspace/maven-tools/bin:~/.rbenv/bin:~/.rbenv/shims"
   #export PANTS_CONFIG_OVERRIDE=pants.ini.cache
+  export GIT_BINARY_LOCATION=/Users/rbarry/.tools-cache/home/devprod/tools/source/git.Darwin.x86_64/bin/git
 
   #removed --idea-idea-version=12 
   alias idea="./pants goal idea app-proxy/server:app app-proxy/loadtest/server:bundle expandodo/server:bin expandodo/caps:macaw-caps expandodo/macaw-publishing-portal:bin expandodo/core:core expandodo/server:bin --idea-source-root=build_root"
@@ -50,6 +51,7 @@ tw-mbp-rbarry)
   alias servtest="cd \"\$(git rev-parse --show-toplevel)\"/expandodo/server/src/test/scala/com/twitter/expandodo/"
   alias up="cd \"\$(git rev-parse --show-toplevel)\""
   bind -x '"˙":"expand_history $COMP_TMP; source $COMP_TMP"'
+  bind -x '"ø":"expand_scm -o $COMP_TMP; source $COMP_TMP"'
   ;;
 ron-desktop)
   export PLATFORM="WIN"
@@ -61,13 +63,11 @@ box481.*)
   export PLATFORM="LINUX"
   export PC_PREFERRED=$PC_CYAN
   export ESC_PREFERRED=$ESC_CYAN
-  export STATUS_LINE_SUPPORT=linux
   ;;
 perforce)
   export PLATFORM="LINUX"
   export PC_PREFERRED=$PC_BLUE
   export ESC_PREFERRED=$ESC_BLUE
-  export STATUS_LINE_SUPPORT=linux
   ;;
 esac
 ################################################################################
@@ -98,7 +98,7 @@ function a {
     ls -al "$@"
   else
     if [[ "$PLATFORM" == "OSX" ]]; then
-      ls -alG "$@" | comify -f 4
+      CLICOLOR_FORCE=1 ls -al "$@" | comify -f 4
     else
       ls -al --color=always "$@" | comify -f 4
     fi

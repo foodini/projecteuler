@@ -107,6 +107,26 @@ def filter_for_matches(preamble, candidates):
       matches.append(candidate)
   return matches
 
+#Given a set of options and the user's "choice" - whatever they entered at the
+#prompt - reduce the options list to just what matches the new information.
+def _get_filtered_options(options, common_base, choice):
+  required_common_base = common_base + choice
+  required_common_base_len = len(required_common_base)
+  filtered_options = []
+  strings_only = []
+  for option in options:
+    if isinstance(option, tuple):
+      option_name, option_description = option
+      if option_name[0:required_common_base_len] == required_common_base:
+        strings_only.append(option_name)
+        filtered_options.append(option)
+    else:
+      if option[0:required_common_base_len] == required_common_base:
+        strings_only.append(option)
+        filtered_options.append(option)
+  new_common_base = get_common_base(strings_only)
+  return (filtered_options, new_common_base)
+
 # There's no way for a child process to affect the environment of a parent
 # process, so to change READLINE_LINE or READLINE_POINT (the env variables that
 # we have to change to affect the command line,) I write a file that the parent
@@ -180,16 +200,34 @@ class Expand():
       _set_terminal_settings(settings)
 
     match = re.search('(\d+)', choice)
+    choice = choice[0:-1]   #Strip the end of line from the choice.
+    if len(choice) == 0:
+      return None
     if not match:
-      return -1
-    return int(match.group(0))
+      filtered_options, new_common_base = _get_filtered_options(
+          options, common_base, choice[0])
+      if len(filtered_options) == 0:
+        return (common_base, new_common_base)
+      elif len(filtered_options) == 1:
+        return (filtered_options[0], new_common_base)
+      else:
+        return self.get_selected_option(filtered_options, new_common_base)
+    return options[int(match.group(0))], common_base
 
   def update_command_line(self, expanded_token):
-    print("expanded_token: " + expanded_token)
     self.command_tokens[self.token_offset] = expanded_token
     readline_line_command = (
         'export READLINE_LINE=\'' + ' '.join(self.command_tokens) + '\'')
     self.append_output(readline_line_command + '\n')
+    new_point = len(' '.join(self.command_tokens[:self.token_offset+1]))
+    self.append_output('export READLINE_POINT=%s\n' % new_point)
+
+  def display(self, expanded_token, common_base, matching_candidates):
+    if self.command_tokens[self.token_offset] != expanded_token:
+      self.command_tokens[self.token_offset] = expanded_token
+      readline_line_command = (
+          'export READLINE_LINE=\'' + ' '.join(self.command_tokens) + '\'')
+      self.append_output(readline_line_command + '\n')
     new_point = len(' '.join(self.command_tokens[:self.token_offset+1]))
     self.append_output('export READLINE_POINT=%s\n' % new_point)
 
