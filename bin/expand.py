@@ -202,17 +202,17 @@ class Expand():
     match = re.search('(\d+)', choice)
     choice = choice[0:-1]   #Strip the end of line from the choice.
     if len(choice) == 0:
-      return None
+      return common_base
     if not match:
       filtered_options, new_common_base = _get_filtered_options(
           options, common_base, choice[0])
       if len(filtered_options) == 0:
-        return (common_base, new_common_base)
+        return common_base
       elif len(filtered_options) == 1:
-        return (filtered_options[0], new_common_base)
+        return new_common_base
       else:
         return self.get_selected_option(filtered_options, new_common_base)
-    return options[int(match.group(0))], common_base
+    return options[int(match.group(0))]
 
   def update_command_line(self, expanded_token):
     self.command_tokens[self.token_offset] = expanded_token
@@ -222,7 +222,7 @@ class Expand():
     new_point = len(' '.join(self.command_tokens[:self.token_offset+1]))
     self.append_output('export READLINE_POINT=%s\n' % new_point)
 
-  def display(self, expanded_token, common_base, matching_candidates):
+  def display(self, expanded_token):
     if self.command_tokens[self.token_offset] != expanded_token:
       self.command_tokens[self.token_offset] = expanded_token
       readline_line_command = (

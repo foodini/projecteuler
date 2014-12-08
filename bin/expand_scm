@@ -36,21 +36,16 @@ def expand_open_files(token_to_expand):
   common_base_file_spec = expand.get_common_base(matching_opened_file_specs)
 
   if len(matching_opened_file_specs) > 1:
-    selected_option, new_common_base = expander.get_selected_option(
+    selected_option = expander.get_selected_option(
         matching_opened_file_specs, common_base_file_spec)
-    if selected_option:
-      matching_opened_file_specs = [selected_option]
-      common_base_file_spec = expand.get_common_base(matching_opened_file_specs)
 
-  if common_base_file_spec == '':
-    relpath = ''
-  else:
-    print common_base_file_spec
-    relpath = os.path.relpath(common_base_file_spec)
-    if common_base_file_spec[-1] == '/':
+  relpath = ""
+  if len(selected_option) > 0:
+    relpath = os.path.relpath(selected_option)
+    if selected_option[-1] == '/':
       relpath += '/'
 
-  expander.display(relpath, common_base_file_spec, matching_opened_file_specs)
+  expander.display(relpath)
 
 def expand_changelist_numbers(token_to_expand):
   pending_changes = source_control.pending()
@@ -67,10 +62,8 @@ def expand_changelist_numbers(token_to_expand):
   if len(matching_changes) > 1:
     selected_option, new_common_base = expander.get_selected_option(
         matching_changes, common_changelist_number)
-    if selected_option:
-      matching_changes = [selected_option]
-      common_changelist_number = expand.get_common_base(matching_changes)
-
+    matching_changes = [selected_option]
+    common_changelist_number = expand.get_common_base(matching_changes)
 
   expander.display(common_changelist_number, common_changelist_number,
                    matching_changes)

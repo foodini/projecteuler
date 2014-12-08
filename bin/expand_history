@@ -65,11 +65,6 @@ if num_matches == 0:
 common_base = expand.get_common_base(potential_matches)
 
 if num_matches > 1:
-  selected_option, new_common_base = expander.get_selected_option(
+  selected_option = expander.get_selected_option(
       potential_matches, common_base)
-  if selected_option:
-    expander.update_command_line(selected_option)
-  else:
-    expander.update_command_line(new_common_base)
-
-
+  expander.update_command_line(selected_option)
