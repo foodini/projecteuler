@@ -21,12 +21,15 @@ alias timer='TIMER="" ~/bin/timer'
 alias less='less -R'
 alias rerc='source ~/.bashrc_xtras'
 alias virc='vi ~/.bashrc_xtras'
+alias vilo='vi ~/.bash_logout_xtras'
 export EDITOR='vim'
 export GREPLOC=/bin/grep
 
 bind -x '"\eo":"expand_scm -o $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
 bind -x '"\en":"expand_scm -c $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
 bind -x '"\eh":"expand_history $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
+
+shopt -s histappend
 
 #######################Per-machine configurations###############################
 case $HOSTNAME in

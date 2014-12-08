@@ -1,6 +1,4 @@
 HIGH priority
-* What's going on with the a() func in mac? Piping it to comify blows away
-  color. Make sure fixes are tested on all platforms.
 * Get bindings working on the mac.
 * Create an expand module for git
 * rewrite color_swatch to do layout dynamically. I'd like to have it show all
