@@ -209,10 +209,19 @@ class Expand():
       if len(filtered_options) == 0:
         return common_base
       elif len(filtered_options) == 1:
-        return new_common_base
+        #When the user has unambiguosly specified an option, the completion
+        #should include a trailing space, to match behavior with bash complete.
+        return new_common_base + " "
       else:
         return self.get_selected_option(filtered_options, new_common_base)
-    return options[int(match.group(0))]
+
+    selected_option = options[int(match.group(0))]
+    if isinstance(selected_option, tuple):
+      selected_option, _ = selected_option
+
+    #When the user has unambiguosly specified an option, the completion
+    #should include a trailing space, to match behavior with bash complete.
+    return selected_option + " "
 
   def update_command_line(self, expanded_token):
     self.command_tokens[self.token_offset] = expanded_token
