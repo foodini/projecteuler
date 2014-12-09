@@ -36,8 +36,8 @@ while True:
       days, hours = divmod(hours, 24)
 
       display_string = ''
-      if days  > 0: display_string += ("%02d:" % days)
-      if hours > 0: display_string += ("%02d:" % hours)
+      if age >= 86400: display_string += ("%02d:" % days)
+      if age >= 3600: display_string += ("%02d:" % hours)
       display_string += "%02d:%02d" % (minutes, seconds)
 
       sys.stdout.write("\033]0;%s %s\007" % (display_string, prompt))
