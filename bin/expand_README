@@ -39,13 +39,16 @@ above commands can find them.
 
 USE (noun) ------------------
 
-I use these scripts with a personal perforce server and in my citc clients.  I
+I use these scripts with a personal perforce server and with a github conf.  I
 need to add some configuration to Expand so it will work with whatever perforce
-client you may have.  (Adding this is next on the TODO list.)
+or git client you may be using. The idea will be that the completion method
+will be chosen based upon whether you're in a git or p4 client directory.
+(Adding this is next on the TODO list.)
 
-g4d into a citc directory where you have a bunch of open files.  At the top
-level, just hit Alt-O.  In less than a second, you should see a list of all the
-open files in that client.  This is what I see now:
+gd into an SCM directory where you have a bunch of open files.  At the top
+level, just hit Alt-O.  In less than a second (unless you're using git), you
+should see a list of all the open files in that client.  This is what I see
+now:
 
 fzzt: {GDBN}/google3> vi
    0 apphosting/api/app_identity/app_identity.py : edit
@@ -79,8 +82,14 @@ into this:
 
     fzzt: {GDBN}/google3> vi apphosting/tools/quotas/quovadis.py
 
+I pretty much hate the ^V mechanism and rarely use it. 
 
-I can also complete changelist numbers:
+You can also type disambiguating characetrs when prompted. Expand recognizes,
+in the above example, that all the options start with "apphosting/". If I were
+to type q, Enter, it would work out that I wanted "apphosting/quotas/..." and
+complete the command line with that .h file.
+
+In perforce, I can also complete changelist numbers:
 
     fzzt: {GDBN}/google3> g4 change -c [Alt-N]
 
