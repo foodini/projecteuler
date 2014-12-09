@@ -6,9 +6,6 @@ import re
 underline = {True: "\033[4m", False: "\033[24m"}
 field_id = None
 
-#TODO: You might have to rewrite to support a need for comify to not break
-#      existing color formatting.
-
 def mark_triples(val_str):
   initial_len = len(val_str)
   toggle = (initial_len)%6 >= 3
@@ -22,6 +19,19 @@ def mark_triples(val_str):
     group_size = (group_size + 2)%3
 
   return retval + underline[False]
+
+if len(sys.argv) > 1 and sys.argv[1] == '--test':
+  print '         ' + mark_triples('0')
+  print '        ' + mark_triples('10')
+  print '       ' + mark_triples('120')
+  print '      ' + mark_triples('1230')
+  print '     ' + mark_triples('12340')
+  print '    ' + mark_triples('123450')
+  print '   ' + mark_triples('1234560')
+  print '  ' + mark_triples('12345670')
+  print ' ' + mark_triples('123456780')
+  print '' + mark_triples('1234567890')
+  exit(0)
 
 next_is_field_id = False
 for arg in sys.argv:
