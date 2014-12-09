@@ -38,6 +38,8 @@ def expand_open_files(token_to_expand):
   if len(matching_opened_file_specs) > 1:
     selected_option = expander.get_selected_option(
         matching_opened_file_specs, common_base_file_spec)
+  else:
+    selected_option = common_base_file_spec
 
   relpath = ""
   if len(selected_option) > 0:
