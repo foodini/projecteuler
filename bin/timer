@@ -10,6 +10,18 @@ multipliers = [7,24,60,60]
 to_stdout = True
 prompt = ""
 
+def format_time(display_seconds):
+  minutes, seconds = divmod(display_seconds, 60)
+  hours, minutes = divmod(minutes, 60)
+  days, hours = divmod(hours, 24)
+
+  display_string = ''
+  if display_seconds > 86400: display_string += ("%02d:" % days)
+  if display_seconds >  3600: display_string += ("%02d:" % hours)
+  display_string += "%02d:%02d" % (minutes, seconds)
+
+  return display_string
+
 to_status_line = False
 status_line = False
 if (os.environ['TERM'] == "xterm" or os.environ['TERM'] == "screen" or
@@ -20,6 +32,9 @@ sys.argv.pop(0)
 while len(sys.argv):
   arg = sys.argv.pop(0)
   if arg[0] == "-":
+    if arg == "-f":
+      print format_time(int(sys.argv.pop(0)))
+      exit(0)
     if arg == "-u":
       direction = "up"
     if arg == "-p":
@@ -57,14 +72,7 @@ while True:
   else:
     display_seconds = int(current_time - start_time + 0.5)
 
-  minutes, seconds = divmod(display_seconds, 60)
-  hours, minutes = divmod(minutes, 60)
-  days, hours = divmod(hours, 24)
-
-  display_string = ''
-  if display_seconds > 86400: display_string += ("%02d:" % days)
-  if display_seconds >  3600: display_string += ("%02d:" % hours)
-  display_string += "%02d:%02d" % (minutes, seconds)
+  display_string = format_time(display_seconds)
 
   if to_stdout:
     sys.stdout.write("\r%s   \b\b\b" % display_string)
