@@ -3,6 +3,8 @@
 # * Set the default prompt hostname color in here, if you're still going to use
 #   one.
 
+#set -xv
+
 if [[ $TERM == "cygwin" ]]; then
   export SHELLOPTS
   set -o igncr
@@ -15,8 +17,8 @@ source ~/bin/color_swatch
 export PC_PREFERRED=$PC_WHITE
 export ESC_PREFERRED=$ESC_WHITE
 
-alias tb='TIMER="" ~/bin/timer && beep'
-alias timer='TIMER="" ~/bin/timer'
+alias tb='ntt ~/bin/timer && beep'
+alias timer='ntt ~/bin/timer'
 #less -R preserves color and underline formatting, which I use addictively:
 alias less='less -R'
 alias rerc='source ~/.bashrc_xtras'
@@ -199,21 +201,21 @@ if [ -e "$LOGFILE" ]; then
 fi
 bash_timer_manager $LOGFILE & export TIMER_PID=$!
 
-TIMER="true"
+#function names must be >= 3 characters.
+ntt() {
+  if [ -e "$LOGFILE" ]; then
+    rm $LOGFILE
+  fi
+  $@
+}
 
 start_timer() {
-  if [ ! -e "$LOGFILE" ]; then
-    CMD=`history | tail -1 | tr -s " " | cut -f2-1000 -d" "`
-    #So you can silence the timer like this:
-    #  TIMER="" sleep 5
-    if [ "$TIMER" == "true" ]; then
+  if [[ "$TIMER" == "false" ]]; then
+    stop_timer
+  else
+    if [ ! -e "$LOGFILE" ]; then
+      CMD=`history | tail -1 | tr -s " " | cut -f2-1000 -d" "`
       echo "$PROMPT_BNW $CMD" > $LOGFILE
-    else
-      #Given the command:
-      # TIMER="" sleep 5
-      #the timer was started BEFORE the command was processed, so we need to
-      #kill the timer.
-      stop_timer
     fi
   fi
 }
@@ -315,4 +317,7 @@ export PROMPT_COMMAND='gen_prompt_text'
 
 if [ $SUPPORTS_STATUS_LINE == "true" ]; then
     trap 'start_timer' DEBUG
+    # Doesn't get run. I haven't debugged why. For the moment, I stop the timer in
+    # the prompt_command
+    #trap 'stop_timer' RETURN
 fi
