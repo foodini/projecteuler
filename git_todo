@@ -24,18 +24,25 @@ HIGH priority
     prompt generation. 
 
 MEDIUM priority
+* What if ./ and ./foo are different git repositories? Typing ./foo/[Alt-o] is
+  not going to give what you think. 
 * Make history completion cd-aware, completing to any directory that you've
   ever been _in_ relative to "$PWD/[argument token]"
 
 LOW priority
 * Get the shared code in comify and a in one place.
-* Should wclive be able to live-track multiple files?
+* Can wclive recognize that a file is still open and continue to update until
+  the last writer closes it?
+  * You can see if you can get a write lock on the file using fcntl, looking 
+    for a F_WRLCK. If it returns nonzero and errno (sys/errno.h) is either
+    EAGAIN or EACCESS, then it's already open. The trouble is that this may
+    not be platform independent. In some cases, the second arg of fcntl will be
+    F_SETLEASE (maybe) and in OSX, uh.... ???
 
 Completion
 * Break completion out into its own repository.
 * What about adding support for the directories you've visited... Could be done
   by having the prompt_command stash it somewhere.
-* Insert a space at the end of successful completions.
 * Columnize output.
 * Three columns for expand_scm: file, changelist#, action.
 * make the "option : description" printing order configurable so changelist
@@ -46,6 +53,4 @@ Completion
     apphosting/...../app_id
     apphosting/...../app_id
     ...and someone has entered app[Alt-O]?
-* There needs to be a commandline option to prevent prompting.  Sometimes, I
-  want old-fashioned disambiguation.
 * Color changelist IDs so they're easier to visually group?
