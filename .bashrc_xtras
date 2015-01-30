@@ -5,6 +5,22 @@
 
 #set -xv
 
+function pathmod() {
+  if [[ ":$PATH:" != *":$1:"* ]]; then
+    export PATH=$2
+  fi
+}
+
+function pathpre() {
+  pathmod "$1" "$1:$PATH"
+}
+
+function pathpost() {
+  pathmod "$1" "$PATH:$1"
+}
+
+pathpost "$HOME/bin"
+
 if [[ $TERM == "cygwin" ]]; then
   export SHELLOPTS
   set -o igncr
@@ -35,22 +51,15 @@ shopt -s histappend
 
 #######################Per-machine configurations###############################
 case $HOSTNAME in
-tw-mbp-rbarry)
+TinyCo*)
+  ssh-agent
   export GREPLOC=/usr/bin/grep
   export PLATFORM="OSX"
   export PC_PREFERRED=$PC_GREEN
   export ESC_PREFERRED=$ESC_GREEN
-  export PATH="$PATH:$HOME/workspace/maven-tools/bin:~/.rbenv/bin:~/.rbenv/shims"
-  #export PANTS_CONFIG_OVERRIDE=pants.ini.cache
-  export GIT_BINARY_LOCATION=/Users/rbarry/.tools-cache/home/devprod/tools/source/git.Darwin.x86_64/bin/git
+  export GIT_BINARY_LOCATION=/usr/bin/git
+  pathpre "/usr/local/share/python"
 
-  #removed --idea-idea-version=12 
-  alias idea="./pants goal idea app-proxy/server:app app-proxy/loadtest/server:bundle expandodo/server:bin expandodo/caps:macaw-caps expandodo/macaw-publishing-portal:bin expandodo/core:core expandodo/server:bin --idea-source-root=build_root"
-
-  alias core="cd \"\$(git rev-parse --show-toplevel)\"/expandodo/core/src/main/scala/com/twitter/expandodo/"
-  alias coretest="cd \"\$(git rev-parse --show-toplevel)\"/expandodo/core/src/test/scala/com/twitter/expandodo/"
-  alias serv="cd \"\$(git rev-parse --show-toplevel)\"/expandodo/server/src/main/scala/com/twitter/expandodo/"
-  alias servtest="cd \"\$(git rev-parse --show-toplevel)\"/expandodo/server/src/test/scala/com/twitter/expandodo/"
   alias up="cd \"\$(git rev-parse --show-toplevel)\""
   bind -x '"˙":"expand_history $COMP_TMP; source $COMP_TMP"'
   bind -x '"ø":"expand_scm -o $COMP_TMP; source $COMP_TMP"'
@@ -59,7 +68,7 @@ ron-desktop)
   export PLATFORM="WIN"
   export PC_PREFERRED=$PC_BROWN
   export ESC_PREFERRED=$ESC_BROWN
-  export PATH=$PATH:$HOME/bin/cygwin
+  pathpost "$HOME/bin/cygwin"
   ;;
 box481.*)
   export PLATFORM="LINUX"
@@ -85,12 +94,15 @@ case $TERM in
     ;;
 esac
 
-export PATH=$PATH:~/bin
+if [ "$BASHPID" == "" ]; then
+  echo "Holy Ancient Versions, Bashman! (Upgrade to 4.something.)"
+fi
 
 export COMP_TMP="$HOME/tmp/$BASHPID.sh"
 source ~/bin/acd_func.sh
 
 LOGFILE="$HOME/bashlogs/$BASHPID"
+echo $LOGFILE
 
 ################################################################################
 #I want these commands to always use color, unless the command is being
@@ -214,7 +226,7 @@ start_timer() {
     stop_timer
   else
     if [ ! -e "$LOGFILE" ]; then
-      CMD=`history | tail -1 | tr -s " " | cut -f2-1000 -d" "`
+      CMD=`history | tail -1 | tr -s " " | cut -f3-1000 -d" "`
       echo "$PROMPT_BNW $CMD" > $LOGFILE
     fi
   fi
