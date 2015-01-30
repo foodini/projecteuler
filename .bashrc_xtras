@@ -102,7 +102,6 @@ export COMP_TMP="$HOME/tmp/$BASHPID.sh"
 source ~/bin/acd_func.sh
 
 LOGFILE="$HOME/bashlogs/$BASHPID"
-echo $LOGFILE
 
 ################################################################################
 #I want these commands to always use color, unless the command is being
