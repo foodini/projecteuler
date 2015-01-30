@@ -24,7 +24,11 @@ filename = sys.argv[1]
 def divmod(val, divisor):
   return (val/divisor, val%divisor)
 
+ppid = os.getppid()
+
 while True:
+  #This will throw an exception, if the parent no longer exists, and do nothing otherwise.
+  os.kill(ppid, 0)
   current_time = time.time()
 
   prompt = read(filename)
