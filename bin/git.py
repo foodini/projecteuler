@@ -20,5 +20,3 @@ def opened():
         retval.append( (os.path.abspath(match.group(1)), 'untracked') )
 
   return retval
-
-print opened()
