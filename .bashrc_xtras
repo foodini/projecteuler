@@ -33,7 +33,7 @@ source ~/bin/color_swatch
 export PC_PREFERRED=$PC_WHITE
 export ESC_PREFERRED=$ESC_WHITE
 
-alias tb='ntt ~/bin/timer && beep'
+alias tb='ntt ~/bin/timer 9:00 && beep'
 alias timer='ntt ~/bin/timer'
 #less -R preserves color and underline formatting, which I use addictively:
 alias less='less -R'
@@ -58,11 +58,14 @@ TinyCo*)
   export PC_PREFERRED=$PC_GREEN
   export ESC_PREFERRED=$ESC_GREEN
   export GIT_BINARY_LOCATION=/usr/bin/git
-  pathpre "/usr/local/share/python"
+  if [ -f $(which virtualenvwrapper.sh) ]; then
+    source $(which virtualenvwrapper.sh)
+  fi
 
   alias up="cd \"\$(git rev-parse --show-toplevel)\""
   bind -x '"˙":"expand_history $COMP_TMP; source $COMP_TMP"'
   bind -x '"ø":"expand_scm -o $COMP_TMP; source $COMP_TMP"'
+  pathpre "/usr/local/Cellar/ctags/5.8/bin"
   ;;
 ron-desktop)
   export PLATFORM="WIN"
@@ -134,22 +137,29 @@ function fgrep {
   fi
 }
 
-# I should build some more intelligence into this: fxgrep -i foo -v bar should group "-i foo" with
-# xargs and "-i bar" with find.
+# fxgrep takes all args up to and including the first that doesn't start with
+# '-' and does a find . | grep [everything else] | xargs grep [first arg set]
+# If there's only one arg not beginning with '-': find . | xargs grep [args]
+#
+# I'd still like a way to point fxgrep at a directory, but I'm not sure what to
+# do with the syntax. fxgrep [directory] -- [first grep args] [second args] ?
+# Require each arg/argset to be quoted?
+#
+#TODO: fix: fxgrep "foo bar" "yodeling yoda" - quotes lost in constructed command.
 function fxgrep {
-  FILE_FILTERS=()
-  LINE_FILTERS=()
+  FILE_FILTER=""
+  LINE_FILTER=""
   FOUND_DELIMITER="false"
-  for i in $@; do
+  for i in "$@"; do  #Quoting makes it accept quoted args as single args
     if [[ $FOUND_DELIMITER == "false" ]]; then
-      LINE_FILTERS+=($i)
-      #echo "added $i to LINE_FILTERS"
+      LINE_FILTER+=`echo $i | sed "s/ /\\\\\\s/g"`
+      LINE_FILTER+=" "
       if [[ ${i:0:1} != "-" ]]; then
         FOUND_DELIMITER="true"
       fi
     else
-      FILE_FILTERS+=($i)
-      #echo "added $i to FILE_FILTERS"
+      FILE_FILTER+=`echo $i | sed "s/ /\\\\\\s/g"`
+      FILE_FILTER+=" "
     fi
   done
 
@@ -158,17 +168,18 @@ function fxgrep {
   else
     WHEN_COLOR="never"
   fi
-  if [[ "${FILE_FILTERS[@]}" != "" ]]; then
-    FILE_FILTER="$GREPLOC ${FILE_FILTERS[@]}"
+  if [[ "$FILE_FILTER" != "" ]]; then
+    FILE_FILTER="$GREPLOC $FILE_FILTER"
   else
     FILE_FILTER="cat"
   fi
 
-  #echo "FILE_FILTER:    $FILE_FILTER"
-  #echo "FILE_FILTERS[]: ${FILE_FILTERS[@]}"
-  #echo "LINE_FILTERS[]: ${LINE_FILTERS[@]}"
-
-  for i in `find . -type f | $FILE_FILTER`; do file "$i"; done | grep text | cut -f1 -d: | ds | xargs $GREPLOC --color=$WHEN_COLOR ${LINE_FILTERS[@]}
+  # When you leave variables unquoted (e.g., $LINE_FILTER instead of "$LINE_FILTER"), it affects
+  # the interpolation of special characters in the variable. But I would expect quoting to work
+  # and unquoted to fail (http://www.tldp.org/LDP/abs/html/quotingvar.html), but this is working
+  # for now. I never want to touch this again. Actually, I REALLY need to set up test cases for
+  # this thing if I ever touch it again.
+  for i in `find . -type f | $FILE_FILTER`; do file $i; done | grep text | cut -f1 -d: | ds | xargs $GREPLOC --color=$WHEN_COLOR $LINE_FILTER
 }
 
 #This one exists specifically to hilight output, so why protect it from
@@ -309,12 +320,26 @@ gen_prompt_text() {
     PROMPT_COL="$PC_BASE_COL$TRIM$PC_RESET"
 
     BRANCH=`git branch 2>&1 | grep '^\*' | cut -c3-`
+    VIRTENV=`echo $VIRTUAL_ENV | cut -d/ -f5`
     if [ "$BRANCH" != "" ]; then
-      export BRANCH="($BRANCH) "
+      if [ "$VIRTENV" != "" ]; then
+        export BRANCHENV="($BRANCH $VIRTENV) "
+      else
+        export BRANCHENV="($BRANCH) "
+      fi
+    else
+      if [ "$VIRTENV" != "" ]; then
+        export BRANCHENV="($VIRTENV) "
+      else
+        export BRANCHENV=""
+      fi
     fi
     TIME=`date +%I:%M`
-    export PROMPT_BNW="$HOST_SHORT $TIME $BRANCH$BASE_BNW$TRIM> "
-    export PROMPT_COL="$PC_UNDER$PC_BASE_COL$HOST_SHORT$PC_UNDER_OFF $TIME $BRANCH$BASE$PROMPT_COL> "
+    #TODO: Make it so only work leaves out the host?
+    #export PROMPT_BNW="$HOST_SHORT $TIME $BRANCHENV$BASE_BNW$TRIM> "
+    #export PROMPT_COL="$PC_UNDER$PC_BASE_COL$HOST_SHORT$PC_UNDER_OFF $TIME $BRANCHENV$BASE$PROMPT_COL> "
+    export PROMPT_BNW="$TIME $BRANCHENV$BASE_BNW$TRIM> "
+    export PROMPT_COL="$PC_BASE_COL$TIME $BRANCHENV$BASE$PROMPT_COL> "
     if [ $SUPPORTS_STATUS_LINE == "true" ]; then
         export PS1="\[\033]0;$PROMPT_BNW\a\]$PROMPT_COL"
     else
