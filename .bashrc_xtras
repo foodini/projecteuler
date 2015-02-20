@@ -66,6 +66,7 @@ TinyCo*)
   bind -x '"˙":"expand_history $COMP_TMP; source $COMP_TMP"'
   bind -x '"ø":"expand_scm -o $COMP_TMP; source $COMP_TMP"'
   pathpre "/usr/local/Cellar/ctags/5.8/bin"
+  HISTFILESIZE=10000
   ;;
 ron-desktop)
   export PLATFORM="WIN"
@@ -147,19 +148,21 @@ function fgrep {
 #
 #TODO: fix: fxgrep "foo bar" "yodeling yoda" - quotes lost in constructed command.
 function fxgrep {
-  FILE_FILTER=""
-  LINE_FILTER=""
+  declare -a FILE_FILTER=()
+  declare -a LINE_FILTER=("-H")
   FOUND_DELIMITER="false"
   for i in "$@"; do  #Quoting makes it accept quoted args as single args
     if [[ $FOUND_DELIMITER == "false" ]]; then
-      LINE_FILTER+=`echo $i | sed "s/ /\\\\\\s/g"`
-      LINE_FILTER+=" "
+      LINE_FILTER+=($i)
+      #LINE_FILTER+=`echo "$i" | sed "s/ /\\\\\\s/g"`
+      #LINE_FILTER+=" "
       if [[ ${i:0:1} != "-" ]]; then
         FOUND_DELIMITER="true"
       fi
     else
-      FILE_FILTER+=`echo $i | sed "s/ /\\\\\\s/g"`
-      FILE_FILTER+=" "
+      FILE_FILTER+=($i)
+      #FILE_FILTER+=`echo $i | sed "s/ /\\\\\\s/g"`
+      #FILE_FILTER+=" "
     fi
   done
 
@@ -169,17 +172,24 @@ function fxgrep {
     WHEN_COLOR="never"
   fi
   if [[ "$FILE_FILTER" != "" ]]; then
-    FILE_FILTER="$GREPLOC $FILE_FILTER"
+    FILE_FILTER="$FILE_FILTER"
   else
-    FILE_FILTER="cat"
+    FILE_FILTER="^"
   fi
+
+  #echo LINE_FILTER: ${LINE_FILTER[*]}
+  #echo FILE_FILTER: ${FILE_FILTER[*]}
 
   # When you leave variables unquoted (e.g., $LINE_FILTER instead of "$LINE_FILTER"), it affects
   # the interpolation of special characters in the variable. But I would expect quoting to work
   # and unquoted to fail (http://www.tldp.org/LDP/abs/html/quotingvar.html), but this is working
   # for now. I never want to touch this again. Actually, I REALLY need to set up test cases for
   # this thing if I ever touch it again.
-  for i in `find . -type f | $FILE_FILTER`; do file $i; done | grep text | cut -f1 -d: | ds | xargs $GREPLOC --color=$WHEN_COLOR $LINE_FILTER
+  
+  # Tell the for loop to only use \n as a delimiter. Otherwise, spaces in filenames will cause
+  # splits.
+  IFS=$'\n'
+  for i in `find . -type f | $GREPLOC ${FILE_FILTER[*]}`; do file $i; done | grep text | cut -f1 -d: | ds | xargs $GREPLOC --color=$WHEN_COLOR ${LINE_FILTER[*]}
 }
 
 #This one exists specifically to hilight output, so why protect it from
