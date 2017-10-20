@@ -21,16 +21,16 @@ def mark_triples(val_str):
   return retval + underline[False]
 
 if len(sys.argv) > 1 and sys.argv[1] == '--test':
-  print '         ' + mark_triples('0')
-  print '        ' + mark_triples('10')
-  print '       ' + mark_triples('120')
-  print '      ' + mark_triples('1230')
-  print '     ' + mark_triples('12340')
-  print '    ' + mark_triples('123450')
-  print '   ' + mark_triples('1234560')
-  print '  ' + mark_triples('12345670')
-  print ' ' + mark_triples('123456780')
-  print '' + mark_triples('1234567890')
+  print ('         ' + mark_triples('0'))
+  print ('        ' + mark_triples('10'))
+  print ('       ' + mark_triples('120'))
+  print ('      ' + mark_triples('1230'))
+  print ('     ' + mark_triples('12340'))
+  print ('    ' + mark_triples('123450'))
+  print ('   ' + mark_triples('1234560'))
+  print ('  ' + mark_triples('12345670'))
+  print (' ' + mark_triples('123456780'))
+  print ('' + mark_triples('1234567890'))
   exit(0)
 
 next_is_field_id = False
@@ -59,4 +59,4 @@ for line in sys.stdin.readlines():
   for match in matches:
     marked = mark_triples(match)
     field = field.replace(match, marked)
-  print left + field + right
+  print (left + field + right)

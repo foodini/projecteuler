@@ -7,8 +7,17 @@ previous elapsed time (if only one line is present because a prompt has been
 generated and the debug trap hasn't fired.)
 
 HIGH priority
-* rewrite color_swatch to do layout dynamically. I'd like to have it show all
-  valid combinations for a particular terminal.
+* When a command has a non-zero return value, can the history completion have
+  some awareness of this and color potential completions differently (red)?
+* Skip .git directories in fxgrep.
+* ls -al (a) could provide git status.
+* Don't call git status for every prompt. Change the branch info only when you
+  change directories.
+* Change prompt to: 
+  [Host] [Time] ([repo]-[branch]) [subdir of repo]>
+  e.g.:
+  desktop 09:29 (~ master) .../bin>
+* pagination of expand output?
 * fxgrep really needs to take a root directory. (It currently starts at .)
 * When you're using a terminal that supports the status line, stop refreshing
   the status line in prompt_command. Right now, all its doing is deleting the
@@ -30,6 +39,8 @@ MEDIUM priority
   ever been _in_ relative to "$PWD/[argument token]"
 
 LOW priority
+* rewrite color_swatch to do layout dynamically. I'd like to have it show all
+  valid combinations for a particular terminal.
 * Get the shared code in comify and a in one place.
 * Can wclive recognize that a file is still open and continue to update until
   the last writer closes it?

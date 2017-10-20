@@ -10,7 +10,7 @@
 
 set mouse=a
 
-set ai tabstop=2 nu shiftwidth=2 backspace=eol,indent,start expandtab softtabstop=2 hlsearch incsearch noic
+set ai tabstop=4 nu shiftwidth=4 backspace=eol,indent,start expandtab softtabstop=4 hlsearch incsearch noic
 :syntax on
 :noremap <F2> :set ic! ic?<CR>
 :noremap <F3> :set nu! nu?<CR>
@@ -26,7 +26,7 @@ let tabsize=2
 :noremap T :let tabsize=(tabsize+2)<CR>:execute "set tabstop=".tabsize." shiftwidth=".tabsize." softtabstop=".tabsize<CR>:echo "tabsize=".tabsize<CR>
 
 if exists('+colorcolumn')
-  :set colorcolumn=81,82,83
+  :set colorcolumn=81,101
   :highlight ColorColumn ctermbg=darkgrey guibg=darkgrey
 endif
 
