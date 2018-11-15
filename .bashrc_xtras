@@ -2,6 +2,7 @@
 #   expand_p4_path depend upon it.
 # * Set the default prompt hostname color in here, if you're still going to use
 #   one.
+# * de-dupe the PATH. (might be able to use a python OrderedSet on the CL.
 
 #set -xv
 
@@ -50,12 +51,12 @@ bind -x '"\eh":"expand_history $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
 
 shopt -s histappend
 
-HISTSIZE=
-HISTFILESIZE=
+HISTSIZE=500
+HISTFILESIZE=5000
 
 #######################Per-machine configurations###############################
 case $HOSTNAME in
-Ron-MacBook*|ip-10-1-2-228*)
+1847JGH6*|ip-10-1-2-228*)
   #fab stage deploy.restart_supervisor
   ssh-agent
 
@@ -66,32 +67,49 @@ Ron-MacBook*|ip-10-1-2-228*)
   export VIRTUALENVWRAPPER_VIRTUALENV=/usr/local/bin/virtualenv
   export VIRTUALENVWRAPPER_VIRTUALENV_ARGS="--no-site-packages"
 
-  export PATH=$PATH:$HOME/google-cloud-sdk/bin:/usr/local/go/bin
 
   export GREPLOC=/usr/bin/grep
   export PLATFORM="OSX"
   export PC_PREFERRED=$PC_GREEN
   export ESC_PREFERRED=$ESC_GREEN
   export GIT_BINARY_LOCATION=/usr/bin/git
-  if [ -f $(which virtualenvwrapper.sh) ]; then
-    source $(which virtualenvwrapper.sh)
-  fi
+
+  # 
+  #if [ -f $(which virtualenvwrapper.sh) ]; then
+  #  source $(which virtualenvwrapper.sh)
+  #fi
+  #
 
   alias up="cd \"\$(git rev-parse --show-toplevel)\""
   alias gpo='git push origin $BRANCH'
   alias gl='git log | head -1 | cut -f2 -d\  | tr -d "\\n"  | pbcopy && pbpaste && echo \ added to clipboard'
-  alias vlo='vi tiny*/settings/local_overrides.py'
-  alias wfg='cd ~/workspace/fgserver && workon fgserver'
-  alias wfut='cd ~/workspace/serverama && workon serverama'
-  alias whp='cd ~/workspace/harry_potter && workon potter'
-  alias wma='cd ~/workspace/marvelserver && workon marvelserver'
-  alias sshprod='ssh `fab prod | grep mgt-prod | grep -v , | grep -v Host | tr -d \" | tr -d " "`'
-  alias sshbeta='ssh `fab beta | grep mgt-beta | grep -v , | grep -v Host | tr -d \" | tr -d " "`'
-  alias sshdev='ssh `fab dev | grep mgt-dev | grep -v , | grep -v Host | tr -d \" | tr -d " "`'
-  alias sshstage='ssh `fab stage | grep mgt-stage | grep -v , | grep -v Host | tr -d \" | tr -d " "`'
-  alias sshreview='ssh `fab review | grep mgt-review | grep -v , | grep -v Host | tr -d \" | tr -d " "`'
-  alias tsl='cd ~/workspace/tinyservicelib'
-  alias gae='cd ~/workspace/gae_collector'
+
+  #Anki-specific
+  alias vic='cd ~/workspace/victor'
+  alias vos='cd ~/workspace/vicos-oelinux'
+  alias sp='cd ~/workspace/victor/project/victor/simpleperf'
+  alias ex='cd ~/workspace/victor/tools/sdk/vector-sdk/examples'
+  alias perf='cd ~/workspace/victor/project/victor/simpleperf'
+  alias tut='cd ~/workspace/victor/tools/sdk/vector-sdk/examples/tutorials'
+  alias sdk='cd ~/workspace/victor/tools/sdk/vector-sdk'
+  #export GOBIN=~/go/bin
+  export GOPATH=/Users/ronb/workspace/victor/cloud/go:/Users/ronb/workspace/victor/generated/cladgo:/Users/ronb/workspace/victor/generated/go:/Users/ronb/workspace/victor/tools/message-buffers/support/go
+  pathpost /usr/local/go/bin
+  pathpost "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
+  source ~/workspace/victor/project/victor/scripts/usefulALiases.sh
+  function perfbot {
+    export ANKI_ROBOT_HOST=192.168.41.101
+    export ANKI_ROBOT_SERIAL=00E10064
+    export ANKI_ROBOT_NAME=S4C4
+    export ANKI_ROBOT_ALIAS='profile'
+  }
+  function relbot {
+    export ANKI_ROBOT_HOST=192.168.41.34
+    export ANKI_ROBOT_SERIAL=00800124
+    export ANKI_ROBOT_NAME=T5Y3
+    export ANKI_ROBOT_ALIAS='vanilla'
+  }
+
   bind -x '"˙":"expand_history $COMP_TMP; source $COMP_TMP"'
   bind -x '"ø":"expand_scm -o $COMP_TMP; source $COMP_TMP"'
   pathpre "/usr/local/Cellar/ctags/5.8/bin"
@@ -152,26 +170,19 @@ function a {
   fi
 }
 
-function update {
-    NEWVER="$1"
-    sed "s/\(^[^#].*tinyservicelib.git.\)[^#]*\(.*\)/\1${NEWVER}\2/" requirements.txt > /tmp/update.tmp.txt
-    mv /tmp/update.tmp.txt requirements.txt
-    git diff requirements.txt
-}
-
 function grep {
   if [[ -t 1 ]]; then
-    $GREPLOC --color=always "$@"
+    $GREPLOC -E --color=always "$@"
   else
-    $GREPLOC --color=never "$@"
+    $GREPLOC -E --color=never "$@"
   fi
 }
 
 function fgrep {
   if [[ -t 1 ]]; then
-    find . | $GREPLOC --color=always "$@"
+    find . | $GREPLOC -E --color=always "$@"
   else
-    find . | $GREPLOC --color=never "$@"
+    find . | $GREPLOC -E --color=never "$@"
   fi
 }
 
@@ -220,11 +231,20 @@ function fxgrep {
   # splits. Note that IFS affects how arrays are joined, as well. Evidently, I could have avoided
   # this entire nightmare with eval.
   IFS=$'\n'
-  for i in `find . -type f | $GREPLOC ${FILE_FILTER[*]}`; do file $i; done | grep text | cut -f1 -d: | ds | xargs $GREPLOC --color=$WHEN_COLOR ${LINE_FILTER[*]}
+  #for i in `find . -type f | $GREPLOC -E ${FILE_FILTER[*]}`; do file $i; done | grep text | cut -f1 -d: | ds | xargs $GREPLOC -E --color=$WHEN_COLOR ${LINE_FILTER[*]}
+  find . -type f | $GREPLOC -E ${FILE_FILTER[*]} | ds | xargs $GREPLOC -E --color=$WHEN_COLOR ${LINE_FILTER[*]}
 }
 
 function pygrep() {
-  fxgrep $@ py$
+  fxgrep $@ [.]py$
+}
+
+function cgrep() {
+  fxgrep $@ "[.]((h)|(cpp)|(c[+]*))$"
+}
+
+function ggrep() {
+  fxgrep $@ [.]go$
 }
 
 #This one exists specifically to hilight output, so why protect it from
@@ -293,7 +313,32 @@ stop_timer() {
   fi
 }
 
+join_list() {
+    RESULT=""
+    GLUE=$1
+    if [ "$2" != "" ]; then
+        RESULT="$2"
+    fi
+    if [ "$3" != "" ]; then
+        if [ "$RESULT" == "" ]; then
+            RESULT="$3"
+        else
+            RESULT="$RESULT$GLUE$3"
+        fi
+    fi
+    if [ "$4" != "" ]; then
+        if [ "$RESULT" == "" ]; then
+            RESULT="$4"
+        else
+            RESULT="$RESULT$GLUE$4"
+        fi
+    fi
+
+    JOIN_LIST_RESULT="$RESULT"
+}
+
 gen_prompt_text() {
+    history -a
     LAST_RETURN_VAL=$?
     #echo $LAST_RETURN_VAL >> $LOGFILE
     #date >> "$LOGFILE"
@@ -368,25 +413,17 @@ gen_prompt_text() {
 
     BRANCH=`git branch 2>&1 | grep '^\*' | cut -c3-`
     VIRTENV=`echo $VIRTUAL_ENV | cut -d/ -f5`
-    if [ "$BRANCH" != "" ]; then
-      if [ "$VIRTENV" != "" ]; then
-        export BRANCHENV="($BRANCH $VIRTENV) "
-      else
-        export BRANCHENV="($BRANCH) "
-      fi
-    else
-      if [ "$VIRTENV" != "" ]; then
-        export BRANCHENV="($VIRTENV) "
-      else
-        export BRANCHENV=""
-      fi
+    join_list " " $BRANCH $VIRTENV $ANKI_ROBOT_ALIAS
+    CONTEXT=$JOIN_LIST_RESULT
+    if [ "$CONTEXT" != "" ]; then
+        CONTEXT="($CONTEXT)"
     fi
     TIME=`date +%I:%M`
     #TODO: Make it so only work leaves out the host?
-    #export PROMPT_BNW="$HOST_SHORT $TIME $BRANCHENV$BASE_BNW$TRIM> "
-    #export PROMPT_COL="$PC_UNDER$PC_BASE_COL$HOST_SHORT$PC_UNDER_OFF $TIME $BRANCHENV$BASE$PROMPT_COL> "
-    export PROMPT_BNW="$TIME $BRANCHENV$BASE_BNW$TRIM> "
-    export PROMPT_COL="╔═ $PC_BASE_COL$TIME $BRANCHENV$BASE$PROMPT_COL\\n╚═ "
+    #export PROMPT_BNW="$HOST_SHORT $TIME $CONTEXT$BASE_BNW$TRIM> "
+    #export PROMPT_COL="$PC_UNDER$PC_BASE_COL$HOST_SHORT$PC_UNDER_OFF $TIME $CONTEXT$BASE$PROMPT_COL> "
+    export PROMPT_BNW="$TIME $CONTEXT$BASE_BNW$TRIM> "
+    export PROMPT_COL="╔═ $PC_BASE_COL$TIME $CONTEXT$BASE$PROMPT_COL\\n╚═ "
     if [ $SUPPORTS_STATUS_LINE == "true" ]; then
         export PS1="\[\033]0;$PROMPT_BNW\a\]$PROMPT_COL"
     else
@@ -407,6 +444,11 @@ fi
 
 function git() {
     GIT_PAUSE="false"
+    if [[ "$1" == "clone" && "$2" != *"ssh://git@github"* ]]; then
+        echo !!!!!!!!!!! are you sure you are cloning properly? !!!!!!!!
+        echo !!!!!!!!!! maybe.... git clone ssh://git@github.... !!!!!!!
+        GIT_PAUSE="true"
+    fi
     if [[ "$1" == "commit" ]]; then
         if [[ `git diff | grep ipdb | wc -l` != "       0" ]]; then
             echo !!!!!!!!!!!!!!!!!!!!!!    ipdb crap detected   !!!!!!!!!!!!!!!!!!!!!!!
@@ -416,11 +458,11 @@ function git() {
             echo !!!!!!!!!!!!!!!!!!!!    DO NOT SUBMIT detected   !!!!!!!!!!!!!!!!!!!!!
             GIT_PAUSE="true"
         fi
-        if [[ "$GIT_PAUSE" == "true" ]]; then
-            sleep 5
-        fi
     fi
-    /usr/local/bin/git $@
+    if [[ "$GIT_PAUSE" == "true" ]]; then
+        sleep 5
+    fi
+    $GIT_BINARY_LOCATION $@
 }
 
 function figit() {
