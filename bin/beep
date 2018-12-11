@@ -1,23 +1,30 @@
-#!/usr/bin/env ruby
+#!/usr/bin/env python3
 
-def beep
-  print "\a"
-  STDOUT.flush
-end
+import os
+import sys
+import time
 
-if ARGV.length > 0
-  count = ARGV[0].to_i
-else
-  count = -1
-end
+def beep():
+  print('\a', flush=True, end='')
 
-begin
-  count -= 1
-  if count != -1
-    beep
-    sleep count/count
-  else
-    break;
-  end
-rescue ZeroDivisionError => e
-end while true
+if os.isatty(sys.stdin.fileno()):
+  if len(sys.argv) > 1:
+    count = int(sys.argv[1])
+  else:
+    count = 10000000000
+
+  while True:
+    beep()
+    count -= 1
+    if count == 0:
+      break
+    else:
+      time.sleep(1)
+else:
+  last_time = 0
+  for line in sys.stdin:
+    now = time.time()
+    if now - last_time > 0.5:
+      beep()
+      last_time = now
+    print(line, end='')
