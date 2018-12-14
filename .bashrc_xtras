@@ -44,6 +44,8 @@ alias vilo='vi ~/.bash_logout_xtras'
 alias g='git status'
 export EDITOR='vim'
 export GREPLOC=/bin/grep
+#I get sick of doing grep --line-buffered. I can just do grep $B
+export B=--line-buffered
 
 bind -x '"\eo":"expand_scm -o $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
 bind -x '"\en":"expand_scm -c $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
@@ -58,7 +60,8 @@ HISTFILESIZE=5000
 case $HOSTNAME in
 1847JGH6*|ip-10-1-2-228*)
   #fab stage deploy.restart_supervisor
-  ssh-agent
+  ssh-add -K ~/.ssh/id_rsa_victor_shared 2> /dev/null > /dev/null
+  ssh-agent > /dev/null
 
   export P4PORT=p4.tinyco.com:1667
   export P4USER=ron
@@ -88,26 +91,31 @@ case $HOSTNAME in
   alias vic='cd ~/workspace/victor'
   alias vos='cd ~/workspace/vicos-oelinux'
   alias sp='cd ~/workspace/victor/project/victor/simpleperf'
-  alias ex='cd ~/workspace/victor/tools/sdk/vector-sdk/examples'
   alias perf='cd ~/workspace/victor/project/victor/simpleperf'
-  alias tut='cd ~/workspace/victor/tools/sdk/vector-sdk/examples/tutorials'
-  alias sdk='cd ~/workspace/victor/tools/sdk/vector-sdk'
+  alias tut='cd ~/workspace/victor/tools/sdk/vector-python-sdk-private/sdk/examples/tutorials'
+  alias sdk='cd ~/workspace/victor/tools/sdk/vector-python-sdk-private/sdk'
   #export GOBIN=~/go/bin
   export GOPATH=/Users/ronb/workspace/victor/cloud/go:/Users/ronb/workspace/victor/generated/cladgo:/Users/ronb/workspace/victor/generated/go:/Users/ronb/workspace/victor/tools/message-buffers/support/go
   pathpost /usr/local/go/bin
   pathpost "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
   source ~/workspace/victor/project/victor/scripts/usefulALiases.sh
+  function localbot {
+    echo export ANKI_ROBOT_HOST=localhost > ~/bot_state.sh
+    echo export ANKI_ROBOT_SERIAL=>> ~/bot_state.sh
+    echo export ANKI_ROBOT_NAME=>> ~/bot_state.sh
+    echo export ANKI_ROBOT_ALIAS='local' >> ~/bot_state.sh
+  }
   function perfbot {
-    export ANKI_ROBOT_HOST=192.168.41.101
-    export ANKI_ROBOT_SERIAL=00E10064
-    export ANKI_ROBOT_NAME=S4C4
-    export ANKI_ROBOT_ALIAS='profile'
+    echo export ANKI_ROBOT_HOST=192.168.41.101 > ~/bot_state.sh
+    echo export ANKI_ROBOT_SERIAL=00E10064 >> ~/bot_state.sh
+    echo export ANKI_ROBOT_NAME=E2A5 >> ~/bot_state.sh
+    echo export ANKI_ROBOT_ALIAS='profile' >> ~/bot_state.sh
   }
   function relbot {
-    export ANKI_ROBOT_HOST=192.168.41.34
-    export ANKI_ROBOT_SERIAL=00800124
-    export ANKI_ROBOT_NAME=T5Y3
-    export ANKI_ROBOT_ALIAS='vanilla'
+    echo export ANKI_ROBOT_HOST=192.168.41.34 > ~/bot_state.sh
+    echo export ANKI_ROBOT_SERIAL=00800124 >> ~/bot_state.sh
+    echo export ANKI_ROBOT_NAME=T5Y3 >> ~/bot_state.sh
+    echo export ANKI_ROBOT_ALIAS='vanilla' >> ~/bot_state.sh
   }
 
   bind -x '"˙":"expand_history $COMP_TMP; source $COMP_TMP"'
@@ -184,6 +192,10 @@ function fgrep {
   else
     find . | $GREPLOC -E --color=never "$@"
   fi
+}
+
+function fc {
+    grep \\W"$@"\\W ~/workspace/victor/robot/include/anki/cozmo/shared/factory/faultCodes.h
 }
 
 # fxgrep takes all args up to and including the first that doesn't start with
@@ -297,6 +309,8 @@ ntt() {
 }
 
 start_timer() {
+  #TODO: get this the hell out of anything not anki-related
+  source ~/bot_state.sh
   if [[ "$TIMER" == "false" ]]; then
     stop_timer
   else
@@ -411,9 +425,9 @@ gen_prompt_text() {
 
     PROMPT_COL="$PC_BASE_COL$TRIM$PC_RESET"
 
-    BRANCH=`git branch 2>&1 | grep '^\*' | cut -c3-`
+    BRANCH=`$GIT_BINARY_LOCATION branch 2>&1 | grep '^\*' | cut -c3-`
     VIRTENV=`echo $VIRTUAL_ENV | cut -d/ -f5`
-    join_list " " $BRANCH $VIRTENV $ANKI_ROBOT_ALIAS
+    join_list " " "$BRANCH" "$VIRTENV" "$ANKI_ROBOT_ALIAS"
     CONTEXT=$JOIN_LIST_RESULT
     if [ "$CONTEXT" != "" ]; then
         CONTEXT="($CONTEXT)"
@@ -423,7 +437,9 @@ gen_prompt_text() {
     #export PROMPT_BNW="$HOST_SHORT $TIME $CONTEXT$BASE_BNW$TRIM> "
     #export PROMPT_COL="$PC_UNDER$PC_BASE_COL$HOST_SHORT$PC_UNDER_OFF $TIME $CONTEXT$BASE$PROMPT_COL> "
     export PROMPT_BNW="$TIME $CONTEXT$BASE_BNW$TRIM> "
-    export PROMPT_COL="╔═ $PC_BASE_COL$TIME $CONTEXT$BASE$PROMPT_COL\\n╚═ "
+    #export PROMPT_COL="╔═ $PC_BASE_COL$TIME $CONTEXT$BASE$PROMPT_COL\\n╚═ "
+    #export PROMPT_COL="╔>$PC_BASE_COL$TIME $CONTEXT$BASE$PROMPT_COL\\n╚>"
+    export PROMPT_COL="╓$PC_BASE_COL$TIME $CONTEXT$BASE$PROMPT_COL\\n╙"
     if [ $SUPPORTS_STATUS_LINE == "true" ]; then
         export PS1="\[\033]0;$PROMPT_BNW\a\]$PROMPT_COL"
     else
@@ -449,19 +465,25 @@ function git() {
         echo !!!!!!!!!! maybe.... git clone ssh://git@github.... !!!!!!!
         GIT_PAUSE="true"
     fi
-    if [[ "$1" == "commit" ]]; then
-        if [[ `git diff | grep ipdb | wc -l` != "       0" ]]; then
-            echo !!!!!!!!!!!!!!!!!!!!!!    ipdb crap detected   !!!!!!!!!!!!!!!!!!!!!!!
-            GIT_PAUSE="true"
-        fi
-        if [[ `git diff | grep DO.NOT.SUBMIT | wc -l` != "       0" ]]; then
-            echo !!!!!!!!!!!!!!!!!!!!    DO NOT SUBMIT detected   !!!!!!!!!!!!!!!!!!!!!
-            GIT_PAUSE="true"
-        fi
+    declare -a patterns=("ipdb" "DO.NOT.SUBMIT" "^\+.{120}")
+    ARGS=""
+    if [[ "$1" == "add" ]]; then
+        ARGS=" "
+    elif [[ "$1" == "commit" ]]; then
+        ARGS="--staged"
+    fi
+    if [[ "$ARGS" != "" ]]; then
+        for PATTERN in "${patterns[@]}"; do
+            if [[ `$GIT_BINARY_LOCATION diff $ARGS | grep -e $PATTERN | wc -l` != "       0" ]]; then
+                echo !!!!!!!!!!!!!!!!!!!!!   what\'s $PATTERN doing in there\?   !!!!!!!!!!!!!!!!!!
+                GIT_PAUSE="true"
+            fi
+        done
     fi
     if [[ "$GIT_PAUSE" == "true" ]]; then
         sleep 5
     fi
+
     $GIT_BINARY_LOCATION $@
 }
 
@@ -475,6 +497,10 @@ function figit() {
 ssh() {
   set_term_bgcolor_for_state "$@"
   /usr/bin/ssh $@
+}
+
+bing() {
+  ping "$@" | grep --line-buffered bytes.from.*icmp_seq | beep
 }
 
 set_term_bgcolor_for_state() {
@@ -526,4 +552,3 @@ tell application "iTerm"
 end tell
 EOF
 }
-
