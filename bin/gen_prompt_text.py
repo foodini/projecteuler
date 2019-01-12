@@ -15,7 +15,6 @@ esc_format = '\[\033[{}m\]'
 esc_format = '\033[{}m'
 esc_format = '\\033[{}m'
 #esc_format = '[{}]'
-#esc_format = 'ESC[{}m'
 
 codes = {
     'BLACK':       30,
@@ -38,7 +37,6 @@ in_color = sys.argv[1] == 'T'
 previous_retval = sys.argv[2]
 no_error_format = sys.argv[3]
 error_format = sys.argv[4]
-context_info = sys.argv[5:]
 
 stack = [
     {'color': codes['WHITE'], 'bold': codes['NO_BOLD'],
@@ -94,15 +92,20 @@ def space():
 
 def context():
     space()
-    if context_info:
+    emit_branch = 'GIT_BRANCH' in os.environ and os.environ['GIT_BRANCH']
+    emit_robot = (
+            'ANKI_ROBOT_ALIAS' in os.environ and
+            'ANKI_ROBOT_COLOR' in os.environ and
+            os.environ['ANKI_ROBOT_ALIAS'])
+    if emit_branch or emit_robot:
         concat('(')
-        formats = context_info[::2]
-        strings = context_info[1::2]
-        for i, (fmt, str) in enumerate(zip(formats, strings)):
-            push_state_from_string(fmt)
-            concat(str)
-            if i != len(formats) - 1:
+        if emit_branch:
+            concat(os.environ['GIT_BRANCH'])
+        if emit_robot:
+            if emit_branch:
                 space()
+            push_state_from_string(os.environ['ANKI_ROBOT_COLOR'])
+            concat(os.environ['ANKI_ROBOT_ALIAS'])
             pop_state()
         concat(')')
         space()

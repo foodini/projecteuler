@@ -95,7 +95,7 @@ case $HOSTNAME in
     export ANKI_ROBOT_SERIAL=00800124
     export ANKI_ROBOT_NAME=T5Y3
     export ANKI_ROBOT_ALIAS='vanilla'
-    export ANKI_ROBOT_COLOR='BROWN'
+    export ANKI_ROBOT_COLOR='BOLD,BROWN'
   }
 
   bind -x '"˙":"expand_history $COMP_TMP; source $COMP_TMP"'
@@ -286,11 +286,9 @@ gen_prompt_text() {
 
     history -a
 
-    BRANCH=`$GIT_BINARY_LOCATION branch 2>&1 | grep '^\*' | cut -c3- | sed -e "s/HEAD detached at //"`
+    export GIT_BRANCH=`$GIT_BINARY_LOCATION branch 2>&1 | grep '^\*' | cut -c3- | sed -e "s/HEAD detached at //"`
 
-    gen_prompt_text.py T $LAST_RETURN_VAL BROWN RED \
-        "" $BRANCH \
-        $ANKI_ROBOT_COLOR $ANKI_ROBOT_ALIAS
+    gen_prompt_text.py T $LAST_RETURN_VAL BROWN RED
 
     source ~/tmp/prompt_$$.sh
 
