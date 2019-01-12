@@ -22,13 +22,6 @@ function pathpost() {
 
 pathpost "$HOME/bin"
 
-if [[ $TERM == "cygwin" ]]; then
-  export SHELLOPTS
-  set -o igncr
-fi
-
-export P4_BINARY_LOCATION='/usr/local/bin/p4'
-
 source ~/bin/color_swatch
 
 export PC_PREFERRED=$PC_WHITE
@@ -63,68 +56,52 @@ case $HOSTNAME in
   ssh-add -K ~/.ssh/id_rsa_victor_shared 2> /dev/null > /dev/null
   ssh-agent > /dev/null
 
-  export P4PORT=p4.tinyco.com:1667
-  export P4USER=ron
-
-  export VIRTUALENVWRAPPER_PYTHON=/usr/local/bin/python
-  export VIRTUALENVWRAPPER_VIRTUALENV=/usr/local/bin/virtualenv
-  export VIRTUALENVWRAPPER_VIRTUALENV_ARGS="--no-site-packages"
-
-
   export GREPLOC=/usr/bin/grep
   export PLATFORM="OSX"
   export PC_PREFERRED=$PC_GREEN
   export ESC_PREFERRED=$ESC_GREEN
   export GIT_BINARY_LOCATION=/usr/bin/git
 
-  # 
-  #if [ -f $(which virtualenvwrapper.sh) ]; then
-  #  source $(which virtualenvwrapper.sh)
-  #fi
-  #
-
   alias up="cd \"\$(git rev-parse --show-toplevel)\""
   alias gpo='git push origin $BRANCH'
-  alias gl='git log | head -1 | cut -f2 -d\  | tr -d "\\n"  | pbcopy && pbpaste && echo \ added to clipboard'
 
   #Anki-specific
   alias vic='cd ~/workspace/victor'
   alias vos='cd ~/workspace/vicos-oelinux'
-  alias sp='cd ~/workspace/victor/project/victor/simpleperf'
   alias perf='cd ~/workspace/victor/project/victor/simpleperf'
   alias tut='cd ~/workspace/victor/tools/sdk/vector-python-sdk-private/sdk/examples/tutorials'
   alias sdk='cd ~/workspace/victor/tools/sdk/vector-python-sdk-private/sdk'
-  #export GOBIN=~/go/bin
+
   export GOPATH=/Users/ronb/workspace/victor/cloud/go:/Users/ronb/workspace/victor/generated/cladgo:/Users/ronb/workspace/victor/generated/go:/Users/ronb/workspace/victor/tools/message-buffers/support/go
   pathpost /usr/local/go/bin
   pathpost "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
   source ~/workspace/victor/project/victor/scripts/usefulALiases.sh
   function localbot {
-    echo export ANKI_ROBOT_HOST=localhost > ~/bot_state.sh
-    echo export ANKI_ROBOT_SERIAL=>> ~/bot_state.sh
-    echo export ANKI_ROBOT_NAME=>> ~/bot_state.sh
-    echo export ANKI_ROBOT_ALIAS='local' >> ~/bot_state.sh
+    export ANKI_ROBOT_HOST=localhost
+    export ANKI_ROBOT_SERIAL=
+    export ANKI_ROBOT_NAME=
+    export ANKI_ROBOT_ALIAS='local'
+    export ANKI_ROBOT_COLOR='BOLD,PURPLE'
   }
   function perfbot {
-    echo export ANKI_ROBOT_HOST=192.168.41.101 > ~/bot_state.sh
-    echo export ANKI_ROBOT_SERIAL=00E10064 >> ~/bot_state.sh
-    echo export ANKI_ROBOT_NAME=E2A5 >> ~/bot_state.sh
-    echo export ANKI_ROBOT_ALIAS='profile' >> ~/bot_state.sh
+    export ANKI_ROBOT_HOST=192.168.41.101
+    export ANKI_ROBOT_SERIAL=00E10064
+    export ANKI_ROBOT_NAME=E2A5
+    export ANKI_ROBOT_ALIAS='profile'
+    export ANKI_ROBOT_COLOR='BOLD,BLUE'
   }
   function relbot {
-    echo export ANKI_ROBOT_HOST=192.168.41.34 > ~/bot_state.sh
-    echo export ANKI_ROBOT_SERIAL=00800124 >> ~/bot_state.sh
-    echo export ANKI_ROBOT_NAME=T5Y3 >> ~/bot_state.sh
-    echo export ANKI_ROBOT_ALIAS='vanilla' >> ~/bot_state.sh
+    export ANKI_ROBOT_HOST=192.168.41.34
+    export ANKI_ROBOT_SERIAL=00800124
+    export ANKI_ROBOT_NAME=T5Y3
+    export ANKI_ROBOT_ALIAS='vanilla'
+    export ANKI_ROBOT_COLOR='BROWN'
   }
 
   bind -x '"˙":"expand_history $COMP_TMP; source $COMP_TMP"'
   bind -x '"ø":"expand_scm -o $COMP_TMP; source $COMP_TMP"'
   pathpre "/usr/local/Cellar/ctags/5.8/bin"
 
-  export VSQL_DATABASE=bizint
-  export VSQL_HOST=10.20.0.110
-  export VSQL_USER=rbarry
   ;;
 ron-desktop)
   export PLATFORM="WIN"
@@ -136,11 +113,6 @@ box481.*)
   export PLATFORM="LINUX"
   export PC_PREFERRED=$PC_CYAN
   export ESC_PREFERRED=$ESC_CYAN
-  ;;
-perforce)
-  export PLATFORM="LINUX"
-  export PC_PREFERRED=$PC_BLUE
-  export ESC_PREFERRED=$ESC_BLUE
   ;;
 esac
 ################################################################################
@@ -267,26 +239,6 @@ function hl {
 ################################################################################
 
 
-#Todo:
-# * Add total logging: write $CMD, it's return value, start and end time to a
-#   log file somewhere?
-# * Get rid of hostname when you're on localhost?  (how?)
-# * (on fit-pc, anyway) I'm still seeing the previous command flash up when a
-#   blank line is entered
-# * move the color definitions to a different file?
-#If you put slashes in here, make SURE they are escaped with a backslash!!!
-replace_substrings() {
-    if [ $BASE == $PWD ]; then
-        BACKREF=$1
-        CRUFT=$2
-        SUB=$3
-        SUB_BNW=$4
-        BASE=`echo $PWD|sed -e "s/^$CRUFT.*/$SUB/g"`
-        BASE_BNW=`echo $PWD|sed -e "s/^$CRUFT.*/$SUB_BNW/g"`
-        TRIM=`echo $PWD|sed -e "s/^$CRUFT\(.*\)/$BACKREF/g"`
-    fi
-}
-
 debug_echo() {
   #echo $@
   echo -en ""
@@ -310,7 +262,6 @@ ntt() {
 
 start_timer() {
   #TODO: get this the hell out of anything not anki-related
-  source ~/bot_state.sh
   if [[ "$TIMER" == "false" ]]; then
     stop_timer
   else
@@ -327,125 +278,29 @@ stop_timer() {
   fi
 }
 
-join_list() {
-    RESULT=""
-    GLUE=$1
-    if [ "$2" != "" ]; then
-        RESULT="$2"
-    fi
-    if [ "$3" != "" ]; then
-        if [ "$RESULT" == "" ]; then
-            RESULT="$3"
-        else
-            RESULT="$RESULT$GLUE$3"
-        fi
-    fi
-    if [ "$4" != "" ]; then
-        if [ "$RESULT" == "" ]; then
-            RESULT="$4"
-        else
-            RESULT="$RESULT$GLUE$4"
-        fi
-    fi
-
-    JOIN_LIST_RESULT="$RESULT"
-}
-
 gen_prompt_text() {
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # DON'T PUT ANYTHING BEFORE THE CAPTURE OF LAST_RETURN_VAL!!!!
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    LAST_RETURN_VAL="$?"
+
     history -a
-    LAST_RETURN_VAL=$?
-    #echo $LAST_RETURN_VAL >> $LOGFILE
-    #date >> "$LOGFILE"
-    #echo >> "$LOGFILE"
 
-    if [ $LAST_RETURN_VAL == 0 ]; then
-        PC_BASE_COL=$PC_PREFERRED
-        ESC_BASE_COL=$ESC_PREFERRED
-    else
-        PC_BASE_COL=$PC_RED
-        ESC_BASE_COL=$ESC_RED
-    fi
+    BRANCH=`$GIT_BINARY_LOCATION branch 2>&1 | grep '^\*' | cut -c3- | sed -e "s/HEAD detached at //"`
 
-    HOST_SHORT=`hostname | cut -f1 -d.`
+    gen_prompt_text.py T $LAST_RETURN_VAL BROWN RED \
+        "" $BRANCH \
+        $ANKI_ROBOT_COLOR $ANKI_ROBOT_ALIAS
 
-    BASE=$PWD
-    TRIM=$PWD
+    source ~/tmp/prompt_$$.sh
 
-    set_term_bgcolor_for_state $BASE
-
-    #replace_substrings takes;
-    # * This is the worst bit, and I'll try to figure it out later.  You
-    #   have to provide the regular expression backreference ONE BEYOND the
-    #   last one you use.  If you don't use any (or you don't know what I'm
-    #   talking about, use "\1".  If you use one backreference in the
-    #   second argument, use "\2".  Etc.  It's used to extract the last
-    #   portion of your current working directory.
-    # * a regular expression match for the bit you want to chop off at the
-    #   beginning 
-    # * the string to replace the regex with in colorized prompts.  You don't
-    #   have to use color.  If you don't this argument and the next will be
-    #   the same.
-    # * the string to replace the regex with in colorless prompts.
-    case $HOSTNAME in
-    fzzt.*)
-      replace_substrings "\1" ".usr.local.google.home.rbarry"\
-           "$ESC_BOLD${ESC_GREEN}~${ESC_BASE_COL}$ESC_BOLD_OFF" "~"
-      replace_substrings "\1" \
-           ".google.src.cloud.rbarry.rbarry-get_[^n]*name"\
-           "$ESC_BOLD${ESC_GREEN}{GDBN}${ESC_BASE_COL}$ESC_BOLD_OFF" "{GDBN}"
-      replace_substrings "\1" ".google.src.cloud.rbarry.rbarry-trusted[^\/]*"\
-           "$ESC_BOLD${ESC_GREEN}{TTW}${ESC_BASE_COL}$ESC_BOLD_OFF" "{TTW}"
-      replace_substrings "\1" ".google.src.cloud.rbarry.rbarry-user_can_[^\/]*"\
-           "$ESC_BOLD${ESC_GREEN}{UCCAD}${ESC_BASE_COL}$ESC_BOLD_OFF" "{UCCAD}"
-      replace_substrings "\2" ".google.src.cloud.rbarry.rbarry-\([^\/]*\)"\
-           "$ESC_BOLD${ESC_GREEN}{\\1}${ESC_BASE_COL}$ESC_BOLD_OFF" "{\\1}"
-      ;;
-    fit-pc)
-      replace_substrings "\1" ".home.ronb"\
-           "$ESC_BOLD${ESC_GREEN}~${ESC_BASE_COL}$ESC_BOLD_OFF" "~"
-      ;;
-    box481.*)
-      replace_substrings "\1" ".home1.foodinio"\
-           "$ESC_BOLD${ESC_GREEN}~${ESC_BASE_COL}$ESC_BOLD_OFF" "~"
-      ;;
-    esac
-
-    # If none of the above clauses have matched, TRIM is all we're going to
-    # display after the hostname, so clear BASE and BASE_BNW
-    if [ "$BASE" == "$PWD" ]; then
-      BASE=""
-      BASE_BNW=""
-    fi
-
-    if [ ${#TRIM} -gt 37 ]; then
-        #TRIM=`echo $TRIM|sed -e "s/^.*\(.\{37\}\)$/\\1/"`
-        #TRIM="...$TRIM"
-        TRIM=`echo $TRIM|sed -e "s/^.*\(.\{37\}\)$/...\\1/"`
-    fi
-
-    PROMPT_COL="$PC_BASE_COL$TRIM$PC_RESET"
-
-    BRANCH=`$GIT_BINARY_LOCATION branch 2>&1 | grep '^\*' | cut -c3-`
-    VIRTENV=`echo $VIRTUAL_ENV | cut -d/ -f5`
-    join_list " " "$BRANCH" "$VIRTENV" "$ANKI_ROBOT_ALIAS"
-    CONTEXT=$JOIN_LIST_RESULT
-    if [ "$CONTEXT" != "" ]; then
-        CONTEXT="($CONTEXT)"
-    fi
-    TIME=`date +%I:%M`
-    #TODO: Make it so only work leaves out the host?
-    #export PROMPT_BNW="$HOST_SHORT $TIME $CONTEXT$BASE_BNW$TRIM> "
-    #export PROMPT_COL="$PC_UNDER$PC_BASE_COL$HOST_SHORT$PC_UNDER_OFF $TIME $CONTEXT$BASE$PROMPT_COL> "
-    export PROMPT_BNW="$TIME $CONTEXT$BASE_BNW$TRIM> "
-    #export PROMPT_COL="╔═ $PC_BASE_COL$TIME $CONTEXT$BASE$PROMPT_COL\\n╚═ "
-    #export PROMPT_COL="╔>$PC_BASE_COL$TIME $CONTEXT$BASE$PROMPT_COL\\n╚>"
-    export PROMPT_COL="╓$PC_BASE_COL$TIME $CONTEXT$BASE$PROMPT_COL\\n╙"
     if [ $SUPPORTS_STATUS_LINE == "true" ]; then
         export PS1="\[\033]0;$PROMPT_BNW\a\]$PROMPT_COL"
     else
         export PS1=$PROMPT_COL
     fi
 
+    set_term_bgcolor_for_state $BASE
     stop_timer
 }
 
@@ -466,22 +321,24 @@ function git() {
         GIT_PAUSE="true"
     fi
     declare -a patterns=("ipdb" "DO.NOT.SUBMIT" "^\+.{120}")
-    ARGS=""
+    SKIP="true"
     if [[ "$1" == "add" ]]; then
-        ARGS=" "
+        ARGS=""
+        SKIP="false"
     elif [[ "$1" == "commit" ]]; then
         ARGS="--staged"
+        SKIP="false"
     fi
-    if [[ "$ARGS" != "" ]]; then
+    if [[ "$SKIP" == "false" ]]; then
         for PATTERN in "${patterns[@]}"; do
             if [[ `$GIT_BINARY_LOCATION diff $ARGS | grep -e $PATTERN | wc -l` != "       0" ]]; then
                 echo !!!!!!!!!!!!!!!!!!!!!   what\'s $PATTERN doing in there\?   !!!!!!!!!!!!!!!!!!
                 GIT_PAUSE="true"
             fi
         done
-    fi
-    if [[ "$GIT_PAUSE" == "true" ]]; then
-        sleep 5
+        if [[ "$GIT_PAUSE" == "true" ]]; then
+            sleep 5
+        fi
     fi
 
     $GIT_BINARY_LOCATION $@
