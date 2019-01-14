@@ -46,8 +46,8 @@ bind -x '"\eh":"expand_history $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
 
 shopt -s histappend
 
-HISTSIZE=500
-HISTFILESIZE=5000
+HISTSIZE=5000
+HISTFILESIZE=10000
 
 #######################Per-machine configurations###############################
 case $HOSTNAME in
@@ -80,21 +80,21 @@ case $HOSTNAME in
     export ANKI_ROBOT_HOST=localhost
     export ANKI_ROBOT_SERIAL=
     export ANKI_ROBOT_NAME=
-    export ANKI_ROBOT_ALIAS='local'
-    export ANKI_ROBOT_COLOR='BOLD,PURPLE'
+    export ANKI_ROBOT_ALIAS='loc'
+    export ANKI_ROBOT_COLOR='BLUE'
   }
   function perfbot {
     export ANKI_ROBOT_HOST=192.168.41.101
     export ANKI_ROBOT_SERIAL=00E10064
     export ANKI_ROBOT_NAME=E2A5
-    export ANKI_ROBOT_ALIAS='profile'
-    export ANKI_ROBOT_COLOR='BOLD,BLUE'
+    export ANKI_ROBOT_ALIAS='perf'
+    export ANKI_ROBOT_COLOR='BOLD,PURPLE'
   }
   function relbot {
     export ANKI_ROBOT_HOST=192.168.41.34
     export ANKI_ROBOT_SERIAL=00800124
     export ANKI_ROBOT_NAME=T5Y3
-    export ANKI_ROBOT_ALIAS='vanilla'
+    export ANKI_ROBOT_ALIAS='rel'
     export ANKI_ROBOT_COLOR='BOLD,BROWN'
   }
 
@@ -291,6 +291,7 @@ gen_prompt_text() {
     gen_prompt_text.py T $LAST_RETURN_VAL BROWN RED
 
     source ~/tmp/prompt_$$.sh
+    #rm ~/tmp/prompt_$$.sh
 
     if [ $SUPPORTS_STATUS_LINE == "true" ]; then
         export PS1="\[\033]0;$PROMPT_BNW\a\]$PROMPT_COL"

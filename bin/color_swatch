@@ -19,7 +19,9 @@ export ESC_DARK='\\[\\033[2m\\]'
 export ESC_DARK_OFF='\\[\\033[22m\\]'
 export ESC_RESET='\\[\\033[0m\\]'
 
-#With the extra \[ & \] to keep prompt length counts happy:
+#PS1 uses the extra \[ and \] to recognize sequences of characters that should
+#be ignored in computing the width of the prompt. If you're using escape
+#sequences in a prompt, you'll need to use these versions.
 export PC_BLACK='\[\033[30m\]'
 export PC_RED='\[\033[31m\]'
 export PC_GREEN='\[\033[32m\]'

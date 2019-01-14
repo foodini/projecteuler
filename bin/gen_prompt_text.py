@@ -115,6 +115,7 @@ pwd = os.environ['PWD']
 if len(pwd) > 37:
     pwd = '...' + pwd[-37:]
 
+concat('\[')
 concat('╓', True)
 
 if previous_retval == '0':
@@ -126,8 +127,14 @@ concat(clock, True)
 context()
 concat(pwd)
 pop_state()
-concat('\\n╙', True)
+concat('\]')
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Everything enclosed in \[ & \] is ignored in computing the width of the prompt, for the sake of
+# proper command wrapping. To this end, I closed out the stack BEFORE writing the second line:
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 top_of_stack_to_result()
+concat('\\n╙', True)
 
 if in_color:
     esc_format.format(0)
