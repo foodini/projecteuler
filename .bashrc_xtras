@@ -261,12 +261,13 @@ ntt() {
 }
 
 start_timer() {
-  #TODO: get this the hell out of anything not anki-related
+  CMD=`history | tail -1 | tr -s " " | cut -f3-1000 -d" "`
+  date_time=`date`
+  echo $date_time:$$:$PWD:$CMD >> ~/full_bash_history
   if [[ "$TIMER" == "false" ]]; then
     stop_timer
   else
     if [ ! -e "$LOGFILE" ]; then
-      CMD=`history | tail -1 | tr -s " " | cut -f3-1000 -d" "`
       echo "$PROMPT_BNW $CMD" > $LOGFILE
     fi
   fi
@@ -357,6 +358,22 @@ ssh() {
 
 bing() {
   ping "$@" | grep --line-buffered bytes.from.*icmp_seq | beep
+}
+
+shing() {
+    (
+        declare -i counter
+
+        counter=0
+        while true; do
+            (
+                rtt=`(time (ssh "$@" echo >> /dev/null)) 2>&1 | grep real | cut -c6-`
+                echo $counter: $rtt
+            ) &
+            counter=$counter+1
+            sleep 5
+        done
+    )
 }
 
 set_term_bgcolor_for_state() {
