@@ -1,62 +1,63 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import re
 
-underline = {True: "\033[4m", False: "\033[24m"}
+underline = "\033[4m"
+no_underline = "\033[24m"
+
+def left_to_right(val_str):
+    return False, [val_str[i:i+3] for i in range(0, len(val_str), 3)]
+
+def right_to_left(val_str):
+    retval = []
+    while val_str:
+        retval.append(val_str[-3:])
+        val_str = val_str[0:-3]
+    retval.reverse()
+    return not bool(len(retval)%2), retval
+
+def mark_triples(val_str, direction):
+    retval = ''
+    flop, triples = direction(val_str)
+    for tri in triples:
+        if flop:
+            retval += underline + tri + no_underline
+        else:
+            retval += tri
+        flop = not flop
+    return retval
+
+frac_re = re.compile('(.*\.)(\d{4,})(.*)')
+#Tricky bit: the '.*?' is important, to keep the .* from greedy-matching. Otherwise, the \d{4,} will
+#only ever be able to match 4 values. My lazy-matching with the '.*?', we leave as many digits as 
+#possible for the second group.
+int_re = re.compile('(.*?)(\d{4,})(.*)')
+def mark_floats(val_str):
+    for regex, direction in [(frac_re, left_to_right), (int_re, right_to_left)]:
+        match = re.match(regex, val_str)
+        while match:
+            g = match.groups()
+            val_str = g[0] + mark_triples(g[1], direction) + g[2]
+            match = re.match(regex, val_str)
+    return val_str
+
 field_id = None
-
-def mark_triples(val_str):
-  initial_len = len(val_str)
-  toggle = (initial_len)%6 >= 3
-  retval = underline[toggle]
-  group_size = (initial_len)%3
-  for c in val_str:
-    if group_size == 0:
-      toggle = not toggle
-      retval += underline[toggle]
-    retval += c
-    group_size = (group_size + 2)%3
-
-  return retval + underline[False]
-
-if len(sys.argv) > 1 and sys.argv[1] == '--test':
-  print ('         ' + mark_triples('0'))
-  print ('        ' + mark_triples('10'))
-  print ('       ' + mark_triples('120'))
-  print ('      ' + mark_triples('1230'))
-  print ('     ' + mark_triples('12340'))
-  print ('    ' + mark_triples('123450'))
-  print ('   ' + mark_triples('1234560'))
-  print ('  ' + mark_triples('12345670'))
-  print (' ' + mark_triples('123456780'))
-  print ('' + mark_triples('1234567890'))
-  exit(0)
-
-next_is_field_id = False
-for arg in sys.argv:
-  if arg == '-f':
-    next_is_field_id = True
-  elif next_is_field_id:
-    next_is_field_id = False
-    field_id = int(arg)
+if len(sys.argv) == 3 and sys.argv[1] == '-f':
+    field_id = int(sys.argv[2])
 
 re_fieldbreak = re.compile('\s*\S+\s*')
 re_digitgroups = re.compile('\d{4,}')
 for line in sys.stdin.readlines():
-  line = line.strip()
-  left = ''
-  field = line
-  right = ''
-  if field_id:
-    matches = re_fieldbreak.findall(line)
-    if len(matches) >= field_id:
-      left = ''.join(matches[:field_id])
-      field = matches[field_id]
-      right = ''.join(matches[field_id+1:])
+    line = line.strip()
+    left = ''
+    field = line
+    right = ''
+    if field_id is not None:
+        matches = re_fieldbreak.findall(line)
+        if len(matches) >= field_id:
+            left = ''.join(matches[:field_id])
+            field = matches[field_id]
+            right = ''.join(matches[field_id+1:])
 
-  matches = re_digitgroups.findall(field)
-  for match in matches:
-    marked = mark_triples(match)
-    field = field.replace(match, marked)
-  print (left + field + right)
+    print (left + mark_floats(field) + right)
