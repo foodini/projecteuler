@@ -5,6 +5,7 @@
 !.gitignore
 !git_todo
 !.vimrc
+!.pyc
 
 #Fix this so you don't have to name every one:
 bin/wclive

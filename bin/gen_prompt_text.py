@@ -132,6 +132,7 @@ concat('\]')
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Everything enclosed in \[ & \] is ignored in computing the width of the prompt, for the sake of
 # proper command wrapping. To this end, I closed out the stack BEFORE writing the second line:
+# If you want any escape characters in the last line, enclose each in \[ & \].
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 top_of_stack_to_result()
 concat('\\n╙', True)
@@ -142,5 +143,5 @@ if in_color:
 filename = (os.environ['HOME'] + '/tmp/prompt_' +
         str(os.getppid()) + '.sh')
 with open(filename, 'w') as fd:
-    fd.write('export PROMPT_COL="' + prompt_col + '"' + '\n')
+    fd.write(u'export PROMPT_COL="' + prompt_col + u'"' + u'\n')
     fd.write('export PROMPT_BNW="' + prompt_bnw + '"' + '\n')

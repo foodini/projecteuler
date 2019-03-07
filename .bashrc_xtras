@@ -57,7 +57,7 @@ case $HOSTNAME in
   ssh-agent > /dev/null
 
   export GREPLOC=/usr/bin/grep
-  export PLATFORM="OSX"
+  export HOST_PLATFORM="OSX"
   export PC_PREFERRED=$PC_GREEN
   export ESC_PREFERRED=$ESC_GREEN
   export GIT_BINARY_LOCATION=/usr/bin/git
@@ -82,6 +82,7 @@ case $HOSTNAME in
     export ANKI_ROBOT_NAME=
     export ANKI_ROBOT_ALIAS='loc'
     export ANKI_ROBOT_COLOR='BLUE'
+    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
   }
   function perfbot {
     export ANKI_ROBOT_HOST=192.168.41.101
@@ -89,6 +90,7 @@ case $HOSTNAME in
     export ANKI_ROBOT_NAME=E2A5
     export ANKI_ROBOT_ALIAS='perf'
     export ANKI_ROBOT_COLOR='BOLD,PURPLE'
+    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
   }
   function relbot {
     export ANKI_ROBOT_HOST=192.168.41.34
@@ -96,6 +98,14 @@ case $HOSTNAME in
     export ANKI_ROBOT_NAME=T5Y3
     export ANKI_ROBOT_ALIAS='rel'
     export ANKI_ROBOT_COLOR='BOLD,BROWN'
+    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
+  }
+  function relhome {
+    relbot
+    export ANKI_ROBOT_HOST=192.168.43.12
+    export ANKI_ROBOT_ALIAS='relhome'
+    export ANKI_ROBOT_COLOR='BOLD,WHITE'
+    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
   }
 
   bind -x '"˙":"expand_history $COMP_TMP; source $COMP_TMP"'
@@ -104,13 +114,13 @@ case $HOSTNAME in
 
   ;;
 ron-desktop)
-  export PLATFORM="WIN"
+  export HOST_PLATFORM="WIN"
   export PC_PREFERRED=$PC_BROWN
   export ESC_PREFERRED=$ESC_BROWN
   pathpost "$HOME/bin/cygwin"
   ;;
 box481.*)
-  export PLATFORM="LINUX"
+  export HOST_PLATFORM="LINUX"
   export PC_PREFERRED=$PC_CYAN
   export ESC_PREFERRED=$ESC_CYAN
   ;;
@@ -135,18 +145,29 @@ source ~/bin/acd_func.sh
 
 LOGFILE="$HOME/bashlogs/$BASHPID"
 
+function vic_tidy {
+  rm -rf ./resources/config/engine/vision/
+  git checkout -- resources/config/engine/vision/*
+}
+
+function vic_clean {
+  vic_tidy
+  git clean -xdff _build generated EXTERNALS ./resources/config/engine/vision --exclude=.vscode
+}
+
+
 ################################################################################
 #I want these commands to always use color, unless the command is being
 #redirected to a file.  I'm sure I'll have to make changes as I find issues.
 function a {
-  if [[ "$CMD" =~ '>' ]]; then
-    ls -al "$@"
-  else
-    if [[ "$PLATFORM" == "OSX" ]]; then
+  if [[ -t 1 ]]; then
+    if [[ "$HOST_PLATFORM" == "OSX" ]]; then
       CLICOLOR_FORCE=1 ls -al "$@" | comify -f 4
     else
       ls -al --color=always "$@" | comify -f 4
     fi
+  else
+    ls -al "$@"
   fi
 }
 
@@ -224,7 +245,7 @@ function pygrep() {
 }
 
 function cgrep() {
-  fxgrep $@ "[.]((h)|(cpp)|(c[+]*))$"
+  fxgrep $@ "[.]((h)|(cpp)|(s)|(c[+]*))$"
 }
 
 function ggrep() {
@@ -263,13 +284,9 @@ ntt() {
 start_timer() {
   CMD=`history | tail -1 | tr -s " " | cut -f3-1000 -d" "`
   date_time=`date`
-  echo $date_time:$$:$PWD:$CMD >> ~/full_bash_history
-  if [[ "$TIMER" == "false" ]]; then
-    stop_timer
-  else
-    if [ ! -e "$LOGFILE" ]; then
-      echo "$PROMPT_BNW $CMD" > $LOGFILE
-    fi
+  if [ ! -e "$LOGFILE" ]; then
+    echo $date_time:$$:$PWD:$CMD >> ~/full_bash_history
+    echo "$PROMPT_BNW $CMD" > $LOGFILE
   fi
 }
 
@@ -295,7 +312,14 @@ gen_prompt_text() {
     #rm ~/tmp/prompt_$$.sh
 
     if [ $SUPPORTS_STATUS_LINE == "true" ]; then
-        export PS1="\[\033]0;$PROMPT_BNW\a\]$PROMPT_COL"
+        ITERM2_PROMPT_MARK_TYPE=`type -t iterm2_prompt_mark`
+        if [ "$ITERM2_PROMPT_MARK_TYPE" == "function" ]; then
+            #Add the info that iTerm2 Shell Integration needs for mark navigation. (You can always
+            #add one, manually, with shift-cmd-m) Navigate w/ shift-cmd-arrows
+            export PS1="\[\033]0;$PROMPT_BNW\a\]\[$(iterm2_prompt_mark)\]$PROMPT_COL"
+        else
+            export PS1="\[\033]0;$PROMPT_BNW\a\]$PROMPT_COL"
+        fi
     else
         export PS1=$PROMPT_COL
     fi
@@ -329,9 +353,12 @@ function git() {
         ARGS="--staged"
         SKIP="false"
     fi
+
     if [[ "$SKIP" == "false" ]]; then
         for PATTERN in "${patterns[@]}"; do
-            if [[ `$GIT_BINARY_LOCATION diff $ARGS | grep -e $PATTERN | wc -l` != "       0" ]]; then
+            echo $GIT_BINARY_LOCATION diff $ARGS "${@:2}"| grep -e $PATTERN
+            RESULT=`$GIT_BINARY_LOCATION diff $ARGS | grep -e $PATTERN`
+            if [[ "$RESULT" != "" ]]; then
                 echo !!!!!!!!!!!!!!!!!!!!!   what\'s $PATTERN doing in there\?   !!!!!!!!!!!!!!!!!!
                 GIT_PAUSE="true"
             fi
@@ -367,11 +394,13 @@ shing() {
         counter=0
         while true; do
             (
-                rtt=`(time (ssh "$@" echo >> /dev/null)) 2>&1 | grep real | cut -c6-`
+                #I need to pass on "Could not resolve hostname", etc. Essentially, any time I get
+                #an error return, that should be displayed to the user.
+                rtt=`(time (ssh "$@" echo >> /dev/null)) 2>&1 | grep -v 'ost is down' | grep real | cut -c6-`
                 echo $counter: $rtt
             ) &
             counter=$counter+1
-            sleep 5
+            sleep 1
         done
     )
 }
