@@ -1,7 +1,21 @@
 #!/usr/bin/env python3
 
+from collections import defaultdict
 import sys
 import re
+
+def usage():
+    print('usage:     ', sys.argv[0], '[-h|-f fieldspec]')
+    print('fieldspec:  Comma-separated list of fields (columns) to apply. Fields are')
+    print('            separated by groups of whitespaces.')
+    print('            -f 0           Only apply to the first field.')
+    print('            -f 1,3         Apply to the second and forth fields.')
+    print('            -f 1,3,5-7     Apply to the second, forth, 6th, 7th, and 8th.')
+    exit(0)
+
+
+if len(sys.argv) == 2:
+    usage()
 
 underline = "\033[4m"
 no_underline = "\033[24m"
@@ -42,22 +56,31 @@ def mark_floats(val_str):
             match = re.match(regex, val_str)
     return val_str
 
-field_id = None
+field_ids = defaultdict(lambda: False)
+field_spec_exists = False
 if len(sys.argv) == 3 and sys.argv[1] == '-f':
-    field_id = int(sys.argv[2])
+    field_spec_exists = True
+    for field_spec in sys.argv[2].split(','):
+        match = re.match('(\d*)-(\d*)', field_spec)
+        if match:
+            start = int(match.groups()[0]) or 0
+            end = int(match.groups()[1]) or 999
+            for field in range(start, end+1):
+                field_ids[int(field)] = True
+        else:
+            field_ids[int(field_spec)] = True
 
 re_fieldbreak = re.compile('\s*\S+\s*')
 re_digitgroups = re.compile('\d{4,}')
 for line in sys.stdin.readlines():
     line = line.strip()
-    left = ''
-    field = line
-    right = ''
-    if field_id is not None:
+    if not field_spec_exists:
+        print (left + mark_floats(field) + right)
+    else:
         matches = re_fieldbreak.findall(line)
-        if len(matches) >= field_id:
-            left = ''.join(matches[:field_id])
-            field = matches[field_id]
-            right = ''.join(matches[field_id+1:])
-
-    print (left + mark_floats(field) + right)
+        for i, match in enumerate(matches):
+            if field_ids[i]:
+                print(mark_floats(match), end='')
+            else:
+                print(match, end='')
+        print()
