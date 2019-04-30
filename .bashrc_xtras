@@ -3,6 +3,7 @@
 # * Set the default prompt hostname color in here, if you're still going to use
 #   one.
 # * de-dupe the PATH. (might be able to use a python OrderedSet on the CL.
+# * red background during a rebase.
 
 #set -xv
 
@@ -67,10 +68,15 @@ case $HOSTNAME in
 
   #Anki-specific
   alias vic='cd ~/workspace/victor'
+  alias vic2='cd ~/workspace/victor2'
+  alias mac-cli='cd ~/workspace/victor/apps/demos/ble-pairing/mac-client'
   alias vos='cd ~/workspace/vicos-oelinux'
   alias perf='cd ~/workspace/victor/project/victor/simpleperf'
   alias tut='cd ~/workspace/victor/tools/sdk/vector-python-sdk-private/sdk/examples/tutorials'
+  alias tut2='cd ~/workspace/victor2/tools/sdk/vector-python-sdk-private/sdk/examples/tutorials'
   alias sdk='cd ~/workspace/victor/tools/sdk/vector-python-sdk-private/sdk'
+  alias sdk2='cd ~/workspace/victor2/tools/sdk/vector-python-sdk-private/sdk'
+  alias sshr='ssh $ANKI_ROBOT_ROOT'
 
   export GOPATH=/Users/ronb/workspace/victor/cloud/go:/Users/ronb/workspace/victor/generated/cladgo:/Users/ronb/workspace/victor/generated/go:/Users/ronb/workspace/victor/tools/message-buffers/support/go
   pathpost /usr/local/go/bin
@@ -102,9 +108,16 @@ case $HOSTNAME in
   }
   function relhome {
     relbot
-    export ANKI_ROBOT_HOST=192.168.43.12
+    export ANKI_ROBOT_HOST=192.168.86.79
     export ANKI_ROBOT_ALIAS='relhome'
     export ANKI_ROBOT_COLOR='BOLD,WHITE'
+    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
+  }
+  function relroam {
+    relbot
+    export ANKI_ROBOT_HOST=192.168.43.12
+    export ANKI_ROBOT_ALIAS='relroam'
+    export ANKI_ROBOT_COLOR='BOLD,RED'
     export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
   }
 
@@ -152,7 +165,14 @@ function vic_tidy {
 
 function vic_clean {
   vic_tidy
+  echo git clean -xdff ...
   git clean -xdff _build generated EXTERNALS ./resources/config/engine/vision --exclude=.vscode
+  echo
+  echo git submodule update --init --recursive ...
+  git submodule update --init --recursive
+  echo
+  echo "* Do you need to do an sdk configure?"
+  echo "* Do you need to do an sdk update.py -d ~/workspace/victor/protobuf/gateway ?"
 }
 
 
@@ -344,7 +364,7 @@ function git() {
         echo !!!!!!!!!! maybe.... git clone ssh://git@github.... !!!!!!!
         GIT_PAUSE="true"
     fi
-    declare -a patterns=("ipdb" "DO.NOT.SUBMIT" "^\+.{120}")
+    declare -a patterns=("^\+.*ipdb" "^\+.*DO.NOT.SUBMIT" "^\+.{120}")
     SKIP="true"
     if [[ "$1" == "add" ]]; then
         ARGS=""
@@ -360,11 +380,12 @@ function git() {
             RESULT=`$GIT_BINARY_LOCATION diff $ARGS | grep -e $PATTERN`
             if [[ "$RESULT" != "" ]]; then
                 echo !!!!!!!!!!!!!!!!!!!!!   what\'s $PATTERN doing in there\?   !!!!!!!!!!!!!!!!!!
+                echo $RESULT
                 GIT_PAUSE="true"
             fi
         done
         if [[ "$GIT_PAUSE" == "true" ]]; then
-            sleep 5
+            sleep 3
         fi
     fi
 
@@ -453,4 +474,31 @@ tell application "iTerm"
   end tell
 end tell
 EOF
+}
+
+function bdr() {
+  ITERM2_PROMPT_MARK_TYPE=`type -t iterm2_prompt_mark`
+  if [ "$ITERM2_PROMPT_MARK_TYPE" == "function" ]; then
+    (iterm2_prompt_mark || true)
+  fi
+  echo -e ${COL_RED}build...${COL_WHITE} && victor_build_debug $1
+  if [ $? != 0 ]; then return; fi
+  echo
+
+  if [ "$ITERM2_PROMPT_MARK_TYPE" == "function" ]; then
+    (iterm2_prompt_mark || true)
+  fi
+  echo -e ${COL_RED}deploy...${COL_WHITE} && victor_deploy_debug
+  if [ $? != 0 ]; then return; fi
+  echo
+
+  if [ "$ITERM2_PROMPT_MARK_TYPE" == "function" ]; then
+    (iterm2_prompt_mark || true)
+  fi
+  echo -e ${COL_RED}wait...${COL_WHITE} && sleep 1
+  echo -e ${COL_RED}victor_restart...${COL_WHITE}
+  victor_restart
+  echo -e ${COL_RED}done...${COL_WHITE}
+
+  beep 1
 }
