@@ -75,7 +75,7 @@ re_digitgroups = re.compile('\d{4,}')
 for line in sys.stdin.readlines():
     line = line.strip()
     if not field_spec_exists:
-        print (left + mark_floats(field) + right)
+        print (mark_floats(line))
     else:
         matches = re_fieldbreak.findall(line)
         for i, match in enumerate(matches):
