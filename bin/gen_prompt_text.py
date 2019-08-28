@@ -115,7 +115,7 @@ pwd = os.environ['PWD']
 if len(pwd) > 37:
     pwd = '...' + pwd[-37:]
 
-concat('\[')
+concat('\[', True)
 concat('╓', True)
 
 if previous_retval == '0':
@@ -127,7 +127,7 @@ concat(clock, True)
 context()
 concat(pwd)
 pop_state()
-concat('\]')
+concat('\]', True)
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Everything enclosed in \[ & \] is ignored in computing the width of the prompt, for the sake of

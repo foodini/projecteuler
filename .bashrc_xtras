@@ -7,6 +7,7 @@
 
 #set -xv
 
+#if $1 isn't in the path, set the new path to be $2
 function pathmod() {
   if [[ ":$PATH:" != *":$1:"* ]]; then
     export PATH=$2
@@ -36,14 +37,20 @@ alias rerc='source ~/.bashrc_xtras'
 alias virc='vi ~/.bashrc_xtras'
 alias vilo='vi ~/.bash_logout_xtras'
 alias g='git status'
+alias gpo='git push origin $BRANCH'
+
 export EDITOR='vim'
 export GREPLOC=/bin/grep
+export GITLOC=/usr/bin/git
+
 #I get sick of doing grep --line-buffered. I can just do grep $B
 export B=--line-buffered
 
 bind -x '"\eo":"expand_scm -o $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
 bind -x '"\en":"expand_scm -c $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
 bind -x '"\eh":"expand_history $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
+
+FBH_DELIM="⦀"
 
 shopt -s histappend
 
@@ -61,10 +68,8 @@ case $HOSTNAME in
   export HOST_PLATFORM="OSX"
   export PC_PREFERRED=$PC_GREEN
   export ESC_PREFERRED=$ESC_GREEN
-  export GIT_BINARY_LOCATION=/usr/bin/git
 
   alias up="cd \"\$(git rev-parse --show-toplevel)\""
-  alias gpo='git push origin $BRANCH'
 
   #Anki-specific
   alias vic='cd ~/workspace/victor'
@@ -126,11 +131,27 @@ case $HOSTNAME in
   pathpre "/usr/local/Cellar/ctags/5.8/bin"
 
   ;;
-ron-desktop)
-  export HOST_PLATFORM="WIN"
+ron-desktop|ron-laptop)
+  export PROCESS_AIRCAM_PATHS="True"
+  export HOST_PLATFORM="LINUX"
   export PC_PREFERRED=$PC_BROWN
   export ESC_PREFERRED=$ESC_BROWN
-  pathpost "$HOME/bin/cygwin"
+
+  eval "$(register-python-argcomplete launch_pipeline)"
+  eval "$(register-python-argcomplete skyrun)"
+
+  #FOR FUTURE REFERENCE..... Make sure that you're doing the --no_mount_check ONLY on the desktop
+  #ON THE LAPTOP, MAKE SURE YOU RUN log_mounter first
+  alias pb='echo "pushd /home/skydio/aircam; (./skyrun bin log_playback_daemon --no_mount_check &> ~/tmp/log_playback_daemon &); popd"'
+  alias ac='cd_func /home/skydio/aircam'
+  alias ac2='cd_func /home/skydio/aircam2'
+
+  alias ssh_usb='ssh aircam@192.168.11.1'
+  alias ssh_wifi='ssh aircam@192.168.10.1'
+  alias ssh_eth='ssh aircam@mariner132'
+
+  xset b 70
+  pactl upload-sample /usr/share/sounds/ubuntu/stereo/bell.ogg bell.ogg
   ;;
 box481.*)
   export HOST_PLATFORM="LINUX"
@@ -157,24 +178,6 @@ export COMP_TMP="$HOME/tmp/$BASHPID.sh"
 source ~/bin/acd_func.sh
 
 LOGFILE="$HOME/bashlogs/$BASHPID"
-
-function vic_tidy {
-  rm -rf ./resources/config/engine/vision/
-  git checkout -- resources/config/engine/vision/*
-}
-
-function vic_clean {
-  vic_tidy
-  echo git clean -xdff ...
-  git clean -xdff _build generated EXTERNALS ./resources/config/engine/vision --exclude=.vscode
-  echo
-  echo git submodule update --init --recursive ...
-  git submodule update --init --recursive
-  echo
-  echo "* Do you need to do an sdk configure?"
-  echo "* Do you need to do an sdk update.py -d ~/workspace/victor/protobuf/gateway ?"
-}
-
 
 ################################################################################
 #I want these commands to always use color, unless the command is being
@@ -209,6 +212,12 @@ function fgrep {
 
 function fc {
     grep \\W"$@"\\W ~/workspace/victor/robot/include/anki/cozmo/shared/factory/faultCodes.h
+}
+
+# NEeds work. How does the argument refer to the filename?
+# can you pipe for...done to an xargs?
+function git_do {
+    for x in `$GITLOC status | grep '(modified)|(added):' | tr -s "" | cut -f2 -d" "`; do $x; done | $1
 }
 
 # fxgrep takes all args up to and including the first that doesn't start with
@@ -257,7 +266,7 @@ function fxgrep {
   # this entire nightmare with eval.
   IFS=$'\n'
   #for i in `find . -type f | $GREPLOC -E ${FILE_FILTER[*]}`; do file $i; done | grep text | cut -f1 -d: | ds | xargs $GREPLOC -E --color=$WHEN_COLOR ${LINE_FILTER[*]}
-  find . -type f | $GREPLOC -E ${FILE_FILTER[*]} | ds | xargs $GREPLOC -E --color=$WHEN_COLOR ${LINE_FILTER[*]}
+  find . -type f | $GREPLOC -v ^\./\.git\/ | $GREPLOC -E ${FILE_FILTER[*]} | ds | xargs $GREPLOC -E --color=$WHEN_COLOR ${LINE_FILTER[*]}
 }
 
 function pygrep() {
@@ -265,7 +274,15 @@ function pygrep() {
 }
 
 function cgrep() {
-  fxgrep $@ "[.]((h)|(cpp)|(s)|(c[+]*))$"
+  fxgrep $@ "[.]((h)|(cpp)|(s)|(cc)|(c[+]*))$"
+}
+
+function pbgrep() {
+  fxgrep $@ [.]proto$
+}
+
+function lcmgrep() {
+  fxgrep $@ [.]lcm$
 }
 
 function ggrep() {
@@ -301,19 +318,78 @@ ntt() {
   $@
 }
 
-start_timer() {
-  CMD=`history | tail -1 | tr -s " " | cut -f3-1000 -d" "`
-  date_time=`date`
-  if [ ! -e "$LOGFILE" ]; then
-    echo $date_time:$$:$PWD:$CMD >> ~/full_bash_history
-    echo "$PROMPT_BNW $CMD" > $LOGFILE
-  fi
+get_time_ns() {
+  date +%s%N
 }
 
-stop_timer() {
-  if [ -e "$LOGFILE" ]; then
-    rm -f $LOGFILE
-  fi
+get_elapsed_time() {
+    START_ELAPSED_TIME=$1
+    END_ELAPSED_TIME=$2
+    ELAPSED_TIME_IN_S=`echo "scale=3; ( $END_ELAPSED_TIME - $START_ELAPSED_TIME ) / 1000000000.0" | bc`
+    python -c "from datetime import timedelta; print(str(timedelta(seconds=$ELAPSED_TIME_IN_S)))"
+}
+
+# (The trap handler)
+on_command_entered_handler() {
+    ##### BEGINNING OF INTER-COMMAND STUFF
+    # In case someone does:
+    #    do first thing ; do second thing
+    # Here we apply any changes that need to happen between the two commands. It actually happens
+    # just as the second one is about to be processed.
+
+    # I'm not a huge fan of doing it this way - it means that `cd xxx; yyy` behaves differently than
+    # `cd xxx && yyy`
+
+    if [[ "$PROCESS_AIRCAM_PATHS" == "True" ]]; then
+      PATH=`echo $PATH | sed -e "s|/home/skydio/aircam[^:]*:*||g"`
+      if [[ $PWD =~ /home/skydio/aircam* ]]; then
+        export AIRCAM_ROOT=`echo $PWD | /usr/bin/cut -f1-4 -d/`
+        export AIRCAM_PREFIX=${AIRCAM_ROOT}/build/host_aircam
+        export LD_LIBRARY_PATH=${AIRCAM_ROOT}/build/host_aircam/lib:${AIRCAM_ROOT}/build/host_third_party/lib
+        # ...then re-add them
+        pathpre "$AIRCAM_ROOT/build/host_third_party/bin"
+        pathpre "$AIRCAM_ROOT/build/host_aircam/bin"
+        pathpre "$AIRCAM_ROOT"
+      fi
+    fi
+
+    #### END OF INTER-COMMAND STUFF
+
+    # gen_prompt_text TRIGGERS THE DEBUG TRAP!!! In fact, any simple command that is issued in this
+    # script will trigger the debug trap. It'll even trigger once for each echo in;
+    #     echo foo; echo bar; echo something else
+    # To deal with this, as soon as we are done generating the prompt, we set AT_PROMPT to True.
+    # When the debug trap fires, it must be the first time since the prompt was generated. In other
+    # words, when the user hit Enter.
+    if [ "$AT_PROMPT" == "True" ]; then
+        if [ "$BASH_COMMAND" == "gen_prompt_text" ]; then
+            SUPPRESS_LOG_LINE="True"
+        else
+            SUPPRESS_LOG_LINE="False"
+        fi
+
+        # The primary reason to get the command this way is to get what they actually typed, instead
+        # of the alias-interpolated version. ($BASH_COMMAND turns 'a' into 'ls -al')
+        COMMAND_LINE=`history | tail -1 | tr -s " " | cut -f3-1000 -d" "`
+        COMMAND_START_DATE=`date`
+        COMMAND_START_NS=`date +%s%N`
+    fi
+
+    AT_PROMPT="False"
+}
+
+on_command_exited_handler() {
+    if [ -e "$LOGFILE" ]; then
+        rm -f $LOGFILE
+    fi
+
+    if [ "$SUPPRESS_LOG_LINE" == "False" ]; then
+        COMMAND_END_NS=`date +%s%N`
+        ELAPSED_S=`echo "scale=3; ( $COMMAND_END_NS - $COMMAND_START_NS ) / 1000000000.0" | bc`
+        ELAPSED_FORMATTED=`python -c "from datetime import timedelta; print(str(timedelta(seconds=$ELAPSED_S)))"`
+
+        echo "$COMMAND_START_DATE$FBH_DELIM${ELAPSED_FORMATTED}$FBH_DELIM$$$FBH_DELIM$PWD$FBH_DELIM$LAST_RETURN_VAL$FBH_DELIM$COMMAND_LINE" >> ~/full_bash_history
+    fi
 }
 
 gen_prompt_text() {
@@ -321,15 +397,16 @@ gen_prompt_text() {
     # DON'T PUT ANYTHING BEFORE THE CAPTURE OF LAST_RETURN_VAL!!!!
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     LAST_RETURN_VAL="$?"
+    on_command_exited_handler
 
     history -a
 
-    export GIT_BRANCH=`$GIT_BINARY_LOCATION branch 2>&1 | grep '^\*' | cut -c3- | sed -e "s/HEAD detached at //"`
+    export GIT_BRANCH=`$GITLOC branch 2>&1 | grep '^\*' | cut -c3- | sed -e "s/HEAD detached at //"`
 
     gen_prompt_text.py T $LAST_RETURN_VAL BROWN RED
 
     source ~/tmp/prompt_$$.sh
-    #rm ~/tmp/prompt_$$.sh
+    rm ~/tmp/prompt_$$.sh
 
     if [ $SUPPORTS_STATUS_LINE == "true" ]; then
         ITERM2_PROMPT_MARK_TYPE=`type -t iterm2_prompt_mark`
@@ -344,18 +421,16 @@ gen_prompt_text() {
         export PS1=$PROMPT_COL
     fi
 
-    set_term_bgcolor_for_state $BASE
-    stop_timer
+    if [ "$HOST_PLATFORM" == "OSX" ]; then
+        set_term_bgcolor_for_state $BASE
+    fi
+
+    AT_PROMPT="True"
 }
 
 export PROMPT_COMMAND='gen_prompt_text'
-
-if [ $SUPPORTS_STATUS_LINE == "true" ]; then
-    trap 'start_timer' DEBUG
-    # Doesn't get run. I haven't debugged why. For the moment, I stop the timer in
-    # the prompt_command
-    #trap 'stop_timer' RETURN
-fi
+SUPPORTS_STATUS_LINE="True"
+trap 'on_command_entered_handler' DEBUG
 
 function git() {
     GIT_PAUSE="false"
@@ -376,8 +451,8 @@ function git() {
 
     if [[ "$SKIP" == "false" ]]; then
         for PATTERN in "${patterns[@]}"; do
-            echo $GIT_BINARY_LOCATION diff $ARGS "${@:2}"| grep -e $PATTERN
-            RESULT=`$GIT_BINARY_LOCATION diff $ARGS | grep -e $PATTERN`
+            echo $GITLOC diff $ARGS "${@:2}"| grep -e $PATTERN
+            RESULT=`$GITLOC diff $ARGS | grep -e $PATTERN`
             if [[ "$RESULT" != "" ]]; then
                 echo !!!!!!!!!!!!!!!!!!!!!   what\'s $PATTERN doing in there\?   !!!!!!!!!!!!!!!!!!
                 echo $RESULT
@@ -389,7 +464,7 @@ function git() {
         fi
     fi
 
-    $GIT_BINARY_LOCATION $@
+    $GITLOC $@
 }
 
 function figit() {
@@ -428,7 +503,9 @@ shing() {
 
 set_term_bgcolor_for_state() {
     local STATE=$1
-    if [[ $STATE == *marvel* ]]; then
+    if [[ $HOST_PLATFORM != "OSX" ]]; then
+        true
+    elif [[ $STATE == *marvel* ]]; then
         set_term_bgimage /Users/ronbarry/background_images/marvel.jpg
     elif [[ $STATE == *fgser* ]]; then
         set_term_bgimage /Users/ronbarry/background_images/familyguy.png
