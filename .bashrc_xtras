@@ -1,5 +1,3 @@
-# * Get bash logging working.  Do a mkdir -p for ~/tmp early, since this and
-#   expand_p4_path depend upon it.
 # * Set the default prompt hostname color in here, if you're still going to use
 #   one.
 # * de-dupe the PATH. (might be able to use a python OrderedSet on the CL.
@@ -71,18 +69,6 @@ case $HOSTNAME in
 
   alias up="cd \"\$(git rev-parse --show-toplevel)\""
 
-  #Anki-specific
-  alias vic='cd ~/workspace/victor'
-  alias vic2='cd ~/workspace/victor2'
-  alias mac-cli='cd ~/workspace/victor/apps/demos/ble-pairing/mac-client'
-  alias vos='cd ~/workspace/vicos-oelinux'
-  alias perf='cd ~/workspace/victor/project/victor/simpleperf'
-  alias tut='cd ~/workspace/victor/tools/sdk/vector-python-sdk-private/sdk/examples/tutorials'
-  alias tut2='cd ~/workspace/victor2/tools/sdk/vector-python-sdk-private/sdk/examples/tutorials'
-  alias sdk='cd ~/workspace/victor/tools/sdk/vector-python-sdk-private/sdk'
-  alias sdk2='cd ~/workspace/victor2/tools/sdk/vector-python-sdk-private/sdk'
-  alias sshr='ssh $ANKI_ROBOT_ROOT'
-
   export GOPATH=/Users/ronb/workspace/victor/cloud/go:/Users/ronb/workspace/victor/generated/cladgo:/Users/ronb/workspace/victor/generated/go:/Users/ronb/workspace/victor/tools/message-buffers/support/go
   pathpost /usr/local/go/bin
   pathpost "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
@@ -145,6 +131,7 @@ ron-desktop|ron-laptop)
   alias pb='echo "pushd /home/skydio/aircam; (./skyrun bin log_playback_daemon --no_mount_check &> ~/tmp/log_playback_daemon &); popd"'
   alias ac='cd_func /home/skydio/aircam'
   alias ac2='cd_func /home/skydio/aircam2'
+  alias ac3='cd_func /home/skydio/aircam3'
 
   alias ssh_usb='ssh aircam@192.168.11.1'
   alias ssh_wifi='ssh aircam@192.168.10.1'
@@ -214,10 +201,11 @@ function fc {
     grep \\W"$@"\\W ~/workspace/victor/robot/include/anki/cozmo/shared/factory/faultCodes.h
 }
 
-# NEeds work. How does the argument refer to the filename?
+# Needs work. How does the argument refer to the filename?
 # can you pipe for...done to an xargs?
 function git_do {
-    for x in `$GITLOC status | grep '(modified)|(added):' | tr -s "" | cut -f2 -d" "`; do $x; done | $1
+    echo $GITLOC status | $GREPLOC '(modified)|(added)'
+    for x in `$GITLOC status | grep -e '((modified)|(added)):' | tr -s " " | cut -f2 -d" "`; do echo $x; done
 }
 
 # fxgrep takes all args up to and including the first that doesn't start with
@@ -265,28 +253,27 @@ function fxgrep {
   # splits. Note that IFS affects how arrays are joined, as well. Evidently, I could have avoided
   # this entire nightmare with eval.
   IFS=$'\n'
-  #for i in `find . -type f | $GREPLOC -E ${FILE_FILTER[*]}`; do file $i; done | grep text | cut -f1 -d: | ds | xargs $GREPLOC -E --color=$WHEN_COLOR ${LINE_FILTER[*]}
-  find . -type f | $GREPLOC -v ^\./\.git\/ | $GREPLOC -E ${FILE_FILTER[*]} | ds | xargs $GREPLOC -E --color=$WHEN_COLOR ${LINE_FILTER[*]}
+  find . -type f | $GREPLOC -v ^\./\.git\/ | $GREPLOC -E ${FILE_FILTER[*]} | ds | xargs -P 16 -L 64 $GREPLOC -E --color=$WHEN_COLOR ${LINE_FILTER[*]}
 }
 
 function pygrep() {
-  fxgrep $@ [.]py$
+  fxgrep -n $@ [.]py$
 }
 
 function cgrep() {
-  fxgrep $@ "[.]((h)|(cpp)|(s)|(cc)|(c[+]*))$"
+  fxgrep -n $@ "[.]((h)|(cpp)|(s)|(cc)|(c[+]*))$"
 }
 
 function pbgrep() {
-  fxgrep $@ [.]proto$
+  fxgrep -n $@ [.]proto$
 }
 
 function lcmgrep() {
-  fxgrep $@ [.]lcm$
+  fxgrep -n $@ [.]lcm$
 }
 
 function ggrep() {
-  fxgrep $@ [.]go$
+  fxgrep -n $@ [.]go$
 }
 
 #This one exists specifically to hilight output, so why protect it from
