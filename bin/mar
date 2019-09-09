@@ -73,14 +73,22 @@ if tag_order == []:
     tag_order.append(lambda d: default_elapsed_format.format(d['incremental']))
 
 buffers = defaultdict(lambda: '')
-
-proc = subprocess.Popen(sys.argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
-
-outfiles = {proc.stdout: sys.stdout, proc.stderr: sys.stderr}
-
 sel = selectors.DefaultSelector()
-sel.register(proc.stdout, selectors.EVENT_READ)
-sel.register(proc.stderr, selectors.EVENT_READ)
+
+if sys.argv:
+    proc = subprocess.Popen(sys.argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
+    outfiles = {proc.stdout: sys.stdout, proc.stderr: sys.stderr}
+    sel.register(proc.stdout, selectors.EVENT_READ)
+    sel.register(proc.stderr, selectors.EVENT_READ)
+    should_hilight = lambda fileobj: fileobj == proc.stderr
+    reader = lambda fileobj: fileobj.read1(1).decode()
+    poll = lambda: proc.poll() is not None
+else:
+    outfiles = defaultdict(lambda: sys.stdout)
+    sel.register(sys.stdin, selectors.EVENT_READ)
+    should_hilight = lambda _: False
+    reader = lambda fileobj: fileobj.read(1)
+    poll = lambda: True
 
 start_time = time.time()
 last_line_end_time = start_time
@@ -113,7 +121,7 @@ while not done:
   annotations_dict['incremental'] = now - last_line_end_time
   if active_fds:
     for key, _ in active_fds:
-      data = key.fileobj.read1(1).decode()
+      data = reader(key.fileobj)
       annotations_dict['chars'] += 1
       if data != '':
         active_buffs += 1
@@ -121,7 +129,7 @@ while not done:
       if data == '\n':
         annotations_dict['lines'] += 1
         annotations_dict['words'] += len(re.findall(words_regexp, buffers[key.fileobj]))
-        print('\r' + annotations(annotations_dict, key.fileobj == proc.stderr) + ' ' +
+        print('\r' + annotations(annotations_dict, should_hilight(key.fileobj)) + ' ' +
               buffers[key.fileobj], end="", file=outfiles[key.fileobj])
         last_line_end_time = now
         buffers[key.fileobj] = ''
@@ -132,12 +140,12 @@ while not done:
       print ('\r' + annotations(annotations_dict), end='', file=sys.stdout, flush=True)
       time.sleep(timer_resolution/4.0)
 
-  done = proc.poll() is not None and active_buffs == 0 and active_fds
+  done = poll() and active_buffs == 0 and active_fds
 
 for fileobj, buffer in buffers.items():
   if buffer == '':
     continue
   now = time.time()
   last_line_end_time = now
-  print('\r' + annotations(annotations_dict, fileobj == proc.stderr) + ' ' + buffers[fileobj],
+  print('\r' + annotations(annotations_dict, should_hilight(fileobj)) + ' ' + buffers[fileobj],
         file=outfiles[fileobj])
