@@ -2,6 +2,14 @@
 
 #http://en.wikipedia.org/wiki/ANSI_escape_code
 
+
+# Take a look at tput. It may clear up some of the nastier uses, here
+# tput smul #(set underline)
+# tput rmul #(remove underline)
+# tput smso #(set bold on)
+# tput rmso #(remove bold on)
+
+
 #The fully-escaped stuff:
 export ESC_BLACK='\\[\\033[30m\\]'
 export ESC_RED='\\[\\033[31m\\]'
