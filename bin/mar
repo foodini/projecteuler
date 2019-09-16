@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 #TODO:
-# if no args, process stdin
-# if getting from stdin, -- shouldn't be required
-# You can't print red for both stdout and stderr
-#   either -- or a non-hyphen-ending arg should end args
 # add a quiet option, so it'll only print tags and no lines
+# stderr should print to stdout.
+# You can't read utf-8 one byte at a time. You'll need to read as much data as are available,
+#   and scan for \n characters.
+# separate counts and inter-line times for stdout and stderr.
+# FIX THE HELP
 
 from collections import defaultdict
 
@@ -81,7 +82,7 @@ if sys.argv:
     sel.register(proc.stdout, selectors.EVENT_READ)
     sel.register(proc.stderr, selectors.EVENT_READ)
     should_hilight = lambda fileobj: fileobj == proc.stderr
-    reader = lambda fileobj: fileobj.read1(1).decode()
+    reader = lambda fileobj: fileobj.read1(1)
     poll = lambda: proc.poll() is not None
 else:
     outfiles = defaultdict(lambda: sys.stdout)
@@ -123,20 +124,20 @@ while not done:
     for key, _ in active_fds:
       data = reader(key.fileobj)
       annotations_dict['chars'] += 1
+      print(data)
       if data != '':
         active_buffs += 1
-        buffers[key.fileobj] += data
+        buffers[key.fileobj] += str(data)
       if data == '\n':
         annotations_dict['lines'] += 1
         annotations_dict['words'] += len(re.findall(words_regexp, buffers[key.fileobj]))
         print('\r' + annotations(annotations_dict, should_hilight(key.fileobj)) + ' ' +
-              buffers[key.fileobj], end="", file=outfiles[key.fileobj])
+              buffers[key.fileobj], end="")
         last_line_end_time = now
         buffers[key.fileobj] = ''
   else:
     if now > next_update_time:
       next_update_time = now + timer_resolution
-      print ('\r' + annotations(annotations_dict, True), end='', file=sys.stderr, flush=True)
       print ('\r' + annotations(annotations_dict), end='', file=sys.stdout, flush=True)
       time.sleep(timer_resolution/4.0)
 
