@@ -122,7 +122,7 @@ bashrc_xtras_path = os.path.join(os.environ['HOME'], '.bashrc_xtras')
 stale_xtras_file = False
 if 'BASHRC_XTRAS_TIMESTAMP' in os.environ:
     stale_xtras_file = os.stat(bashrc_xtras_path)[8] > int(os.environ['BASHRC_XTRAS_TIMESTAMP'])
-stale_xtras_warning = (esc_format(codes['INVERT'], codes['RED']) + 'X' +
+stale_xtras_warning = (esc_format(codes['INVERT'], codes['RED']) + '⚙!' +
         esc_format(codes['NO_INVERT'], codes['WHITE']))
 
 concat('\[', True)
