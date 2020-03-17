@@ -4,7 +4,10 @@
 
 #set -xv
 
-export BASHRC_XTRAS_TIMESTAMP=`stat -c%Y ~/.bashrc_xtras`
+if [ ! -d ~/tmp ]; then
+  echo ~/tmp doesn\'t exist. Creating it.
+  mkdir ~/tmp
+fi
 
 #if $1 isn't in the path, set the new path to be $2
 function pathmod() {
@@ -58,7 +61,19 @@ HISTFILESIZE=10000
 
 #######################Per-machine configurations###############################
 case $HOSTNAME in
+Rons-MacBook-Pro*|rons-mbp*)
+  export BASHRC_XTRAS_TIMESTAMP=`stat -f %m ~/.bashrc_xtras`
+
+  export GREPLOC=/usr/bin/grep
+  export HOST_PLATFORM="OSX"
+  export PC_PREFERRED=$PC_BLUE
+  export ESC_PREFERRED=$ESC_BLUE
+  bind -x '"˙":"expand_history $COMP_TMP; source $COMP_TMP"'
+  bind -x '"ø":"expand_scm -o $COMP_TMP; source $COMP_TMP"'
+  ;;
 1847JGH6*|ip-10-1-2-228*)
+  export BASHRC_XTRAS_TIMESTAMP=`stat -c%Y ~/.bashrc_xtras`
+
   #fab stage deploy.restart_supervisor
   ssh-add -K ~/.ssh/id_rsa_victor_shared 2> /dev/null > /dev/null
   ssh-agent > /dev/null
@@ -119,6 +134,8 @@ case $HOSTNAME in
 
   ;;
 ron-desktop|ron-laptop)
+  export BASHRC_XTRAS_TIMESTAMP=`stat -c%Y ~/.bashrc_xtras`
+
   export PROCESS_AIRCAM_PATHS="True"
   export HOST_PLATFORM="LINUX"
   export PC_PREFERRED=$PC_BROWN
@@ -142,6 +159,8 @@ ron-desktop|ron-laptop)
   pactl upload-sample /usr/share/sounds/ubuntu/stereo/bell.ogg bell.ogg
   ;;
 box481.*)
+  export BASHRC_XTRAS_TIMESTAMP=`stat -c%Y ~/.bashrc_xtras`
+
   export HOST_PLATFORM="LINUX"
   export PC_PREFERRED=$PC_CYAN
   export ESC_PREFERRED=$ESC_CYAN
@@ -360,7 +379,7 @@ on_command_entered_handler() {
         # of the alias-interpolated version. ($BASH_COMMAND turns 'a' into 'ls -al')
         COMMAND_LINE=`history | tail -1 | tr -s " " | cut -f3-1000 -d" "`
         COMMAND_START_DATE=`date`
-        COMMAND_START_NS=`date +%s%N`
+        COMMAND_START_S=`python3 -c "import time; print(time.time())"`
         PWD_AT_COMMAND_ENTRY=$PWD
     fi
 
@@ -373,9 +392,8 @@ on_command_exited_handler() {
     fi
 
     if [ "$SUPPRESS_LOG_LINE" == "False" ]; then
-        COMMAND_END_NS=`date +%s%N`
-        ELAPSED_S=`echo "scale=3; ( $COMMAND_END_NS - $COMMAND_START_NS ) / 1000000000.0" | bc`
-        ELAPSED_FORMATTED=`python -c "from datetime import timedelta; print(str(timedelta(seconds=$ELAPSED_S)))"`
+        COMMAND_END_S=`python3 -c "import time; print(time.time())"`
+        ELAPSED_FORMATTED=`python -c "from datetime import timedelta; print(str(timedelta(seconds=$COMMAND_END_S-$COMMAND_START_S)))"`
 
         echo "$COMMAND_START_DATE$FBH_DELIM${ELAPSED_FORMATTED}$FBH_DELIM$$$FBH_DELIM$GIT_BRANCH$FBH_DELIM$PWD_AT_COMMAND_ENTRY$FBH_DELIM$LAST_RETURN_VAL$FBH_DELIM$COMMAND_LINE" >> ~/full_bash_history
     fi
