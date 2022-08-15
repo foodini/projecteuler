@@ -186,6 +186,7 @@ def timeseries(x0, y0, width, height, maxval, header_string, data, call=max):
       y -= 1
       scaled_height -= 8
     print_at(x, y, blocks[scaled_height])
+    y -= 1
     while y > y0:
       print_at(x, y, ' ')
       y -= 1
