@@ -72,10 +72,11 @@ if len(sys.argv) == 3 and sys.argv[1] == '-f':
 
 re_fieldbreak = re.compile('\s*\S+\s*')
 re_digitgroups = re.compile('\d{4,}')
-for line in sys.stdin.readlines():
+
+for line in sys.stdin:
     line = line.strip()
     if not field_spec_exists:
-        print (mark_floats(line))
+        print (mark_floats(line), flush=True)
     else:
         matches = re_fieldbreak.findall(line)
         for i, match in enumerate(matches):
@@ -83,4 +84,4 @@ for line in sys.stdin.readlines():
                 print(mark_floats(match), end='')
             else:
                 print(match, end='')
-        print()
+        print(flush=True)
