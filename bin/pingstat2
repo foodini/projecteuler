@@ -222,7 +222,7 @@ class Timeseries(object):
     return footer
 
 def parse_command_line():
-  parser = argparse.ArgumentParser(description='does a thing  does it with a ping')
+  parser = argparse.ArgumentParser(description='You might want to have figlet in your $PATH.')
   parser.add_argument('-t', '--time', type=int, default=3600,
       help='Time (sec) to limit horizontal axis.')
   parser.add_argument('-l', '--linear', action='store_true',
