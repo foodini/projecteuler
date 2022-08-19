@@ -1,0 +1,433 @@
+#!/usr/bin/env python3
+
+'''
+TODO:
+* When changing between axes, show some sort of 'loading' indicator.
+* Fix the timescale.
+* Best way to show packet loss? I'm still not happy with just showing loss percentage - especially
+  with a non-linear x-axis.
+* Sync up the max RTT and the max loss % across all rows so they're all at the same vertical scale.
+* Fix the user interaction so 'z' and 'q' work to quit. This allows us to properly reset the
+  terminal when the user quits.
+* Trap ^C so we can clean up the terminal. As it is, the user usually has to `reset` after running.
+* add a --text to do everything in text mode. This will make the thing more useful for non-iTerm2
+  users, or anyone who is running this across an ssh connection.
+  * Check the ancestry of the process to see if the terminal is sshd or other remote session, and
+    fall back to text mode if that's the case.
+* Fall back to text mode when the screen is too narrow?
+  * If no, there are major text problems when the screen isn't wide enough.
+* Add data about max losses in a row.
+* Consider using the banner font for the watermark
+'''
+
+import argparse
+import base64
+from subprocess import Popen, PIPE
+import math
+import os
+import random
+import re
+import select
+import sys
+import time
+
+import text_manipulation as tm
+
+class Result(object):
+  def __init__(self, timestamp, successful, rtt):
+    self.timestamp = timestamp
+    self.successful = successful
+    self.rtt = rtt
+
+class Bucket(object):
+  def __init__(self, older_bucket):
+    self.results = []
+    self.older_bucket = older_bucket
+    self.dirty = True
+    self.cached_result = None
+
+  def set_expiration_age(self, expiration_age):
+    self.expiration_age = expiration_age
+
+  def append(self, result):
+    self.dirty = True
+    self.results.append(result)
+
+  def advance(self, now):
+    while len(self.results) and self.results[0].timestamp < now - self.expiration_age:
+      r = self.results.pop(0)
+      if self.older_bucket is not None:
+        self.older_bucket.append(r)
+
+  def get_oldest_timestamp(self):
+    now = time.time()
+    if len(self.results):
+      return now - self.results[0].timestamp
+    return now
+
+  def get_stats(self):
+    if not self.dirty:
+      return self.cached_result
+
+    if len(self.results) == 0:
+      self.cached_result = {
+          #TODO get rid of unnecessary data points when no_data is working
+          'min': 0.0, 'med': 0.0, 'avg': 0.0, '97%': 0.0, 'max': 0.0, 'loss%': 0.0,
+          'no_data': True }
+      self.dirty = False
+      return self.cached_result
+
+    min_rtt = 99999.0
+    max_rtt = -1.0
+    rtts = []
+    total_rtt = 0.0
+    total_losses = 0
+    for r in self.results:
+      if r.successful:
+        rtts.append(r.rtt)
+        min_rtt = min(min_rtt, r.rtt)
+        max_rtt = max(min_rtt, r.rtt)
+        total_rtt += r.rtt
+      else:
+        total_losses += 1
+
+    rtts.sort()
+    num_results = len(rtts)
+    if num_results:
+      avg = total_rtt / num_results
+    else:
+      avg = 0.0
+
+    if len(self.results):
+      loss_pct = 100.0 * total_losses / len(self.results)
+    else:
+      loss_pct = 0.0
+
+    #TODO: this should be a class:
+    if len(rtts) == 0:
+      self.cached_result = {
+          'min': 0.0, 'med': 0.0, 'avg': 0.0, '97%': 0.0, 'max': 0.0, 'loss%': loss_pct,
+          'no_rtts': True}
+      self.dirty = False
+      return self.cached_result
+
+    self.cached_result = {
+        'min': min_rtt,
+        'med': rtts[num_results // 2], # TODO: interpolate between vals when num_results is even?
+        'avg': total_rtt / num_results,
+        '97%': rtts[int(num_results * 0.97)],
+        'max': rtts[-1],
+        'loss%': loss_pct,
+    }
+    self.dirty = False
+    return self.cached_result
+
+class Timeseries(object):
+  def __init__(self, expiration_age):
+    self.expiration_age = expiration_age
+    self.all_results = Bucket(None)
+    self.all_results.set_expiration_age(expiration_age)
+    # Buckets are ordered with 0 as the most recent data
+    self.buckets = []
+
+    self.success_count = 0
+
+  def allocate_buckets(self, count, linear):
+    self.buckets = []
+
+    older_bucket = None
+    for i in range(count):
+      bucket = Bucket(older_bucket)
+      self.buckets.append(bucket)
+      older_bucket = bucket
+      # compute the linear expiration ages. They'll be replaced if non-linear:
+      bucket.set_expiration_age((count - i) * self.expiration_age / count)
+
+    if not linear:
+      expon_growth = self.expiration_age ** (1/count)
+      expiration_age = 1.0
+      for i in range(count):
+        expiration_age *= expon_growth
+        self.buckets[count-i-1].set_expiration_age(expiration_age - 1.0)
+
+    #import ipdb; ipdb.set_trace()
+    for result in self.all_results.results:
+      self.buckets[-1].append(result)
+      self.advance()
+
+  def append(self, result):
+    if result.successful:
+      self.success_count += 1
+
+    self.all_results.append(result)
+    self.buckets[-1].append(result)
+    self.advance()
+
+
+  def advance(self):
+    now = time.time()
+    self.all_results.advance(now)
+    for b in self.buckets:
+      b.advance(now)
+
+  def get_stats(self):
+    retval = [b.get_stats() for b in self.buckets]
+    retval.reverse()
+    return retval
+
+  def get_age(self):
+    try:
+      return time.time() - next(b for b in self.buckets if len(b.results) > 0).results[0].timestamp
+    except:
+      return 0.0
+
+  def get_footer(self, width):
+    def compact_format(expiration_age):
+      retval = ''
+      quit_early = False
+      if expiration_age > 3600:
+        hours = expiration_age // 3600
+        expiration_age -= hours * 3600
+        retval += '%dh' % hours
+        quit_early = True
+      if expiration_age > 60:
+        mins = expiration_age // 60
+        expiration_age -= mins * 60
+        retval += '%dm' % mins
+      if quit_early:
+        return retval
+      retval += '%ds' % int(expiration_age)
+      return retval
+
+    footer = ''
+    prev_additional_footer = ''
+    scale = len(self.buckets) / width
+    while True:
+      #import ipdb; ipdb.set_trace()
+      bucket_index = int((len(footer) + .5) * scale)
+      bucket = self.buckets[min(len(self.buckets)-1, bucket_index)]
+      expiration_age = bucket.expiration_age
+      # TODO: the trailing space means I'll occasionally not squeeze in the last entry that
+      #       would otherwise fit. Until I fix the accuracy problem, I'm not going to mess
+      #       with this further.
+      additional_footer = '↑%s ' % (compact_format(expiration_age))
+      if len(footer) + len(additional_footer) >= width:
+        break
+      if additional_footer != prev_additional_footer:
+        footer += additional_footer
+        prev_additional_footer = additional_footer
+      else:
+        footer += ' '
+
+    return footer
+
+def parse_command_line():
+  parser = argparse.ArgumentParser(description='does a thing  does it with a ping')
+  parser.add_argument('-t', '--time', type=int, default=3600,
+      help='Time (sec) to limit horizontal axis.')
+  parser.add_argument('-l', '--linear', action='store_true',
+      help='Use a linear x-axis instead of the default exponential one.')
+  parser.add_argument('-p', '--ping_delay', type=float, default=0.25,
+      help='Time between outbound icmp packets (e.g., [0.125 | 5]). Default = 0.25s.')
+  parser.add_argument('-r', '--redraw_delay', type=float, default=1.0,
+      help='Time between screen redraws (e.g., [0.125 | 5]). Will not redraw faster than new data '
+           'becomes available. Default = 0.5s.')
+  parser.add_argument('ip_addresses', nargs='*', default=['8.8.8.8'])
+  return parser.parse_args(sys.argv[1:])
+
+
+command_line = parse_command_line()
+
+last_term_width = 0
+last_term_height = 0
+
+# The color combinations are designed to work with my color deficiency - not only in such a
+# was as to make them (mostly) distinguishable, but also to make a white pixel where two of
+# them would overlap when I might want the overlap to be clear.
+rtt_colors = {
+    'min': [64, 64, 64],
+    'med': [0, 0, 255],
+    'avg': [0, 255, 0],
+    '97%': [0, 127, 255],
+    'max': [255, 128, 0],
+}
+
+loss_colors = {
+  'loss%': [255, 0, 0]
+}
+
+fileno_to_timeseries = dict()
+stdouts = []
+stderrs = []
+timeseries = []
+for i, ip_address in enumerate(command_line.ip_addresses):
+  timeseries_dict = dict()
+  subprocess = Popen(
+      ['/sbin/ping', '-i', '%s' % command_line.ping_delay, ip_address], stdout=PIPE, stderr=PIPE)
+  timeseries_dict['ping_subprocess'] = subprocess
+
+  timeseries_dict['stdout'] = subprocess.stdout
+  timeseries_dict['stdout_fileno'] = subprocess.stdout.fileno()
+  fileno_to_timeseries[subprocess.stdout.fileno()] = timeseries_dict
+  stdouts.append(subprocess.stdout.fileno())
+  timeseries_dict['stderr'] = subprocess.stderr
+  timeseries_dict['stderr'] = subprocess.stderr.fileno()
+  fileno_to_timeseries[subprocess.stderr.fileno()] = timeseries_dict
+  stdouts.append(subprocess.stdout.fileno())
+
+  timeseries_obj = Timeseries(command_line.time)
+  timeseries_dict['timeseries_obj'] = timeseries_obj
+  #TODO: Do this at the last possible moment, and set it to approximately the width of the cell.
+  timeseries_obj.allocate_buckets(tm.get_terminal_width(), command_line.linear)
+
+  timeseries_dict['row'] = i
+  timeseries_dict['last_redraw_time'] = 0
+  timeseries_dict['ip_address'] = ip_address
+
+  timeseries.append(timeseries_dict)
+
+
+def handle_user_input():
+  while True:
+    user_input = tm.getch_immediate()
+
+    if not user_input:
+      break
+    else:
+      if(ord(user_input) == 3 or # ^C
+          ord(user_input) == 4): # ^D
+        tm.flush()
+        #TODO: Make sure this gets called when someone force-quits
+        print('=' * 1000)
+        tm.terminate_getch_immediate()
+        exit(0)
+      if user_input == 'l':
+        linear = not linear
+        for ts in timeseries:
+          ts.allocate_buckets(200, linear)
+        redraw_all()
+
+
+def parse_line(timeseries_dict, line):
+  now = time.time()
+  matched = False
+
+  m = re.search(r'bytes from (.*time=([^ ]+).*)', line)
+  if m:
+    t = float(m.groups()[1])
+    timeseries_dict['timeseries_obj'].append(Result(now, True, t))
+    timeseries_dict['shortened_line'] = m.groups()[0]
+    return True
+  if 'Request timeout' in line or 'Destination Net Unreachable' in line:
+    timeseries_dict['timeseries_obj'].append(Result(now, False, 0.0))
+    timeseries_dict['shortened_line'] = line
+    return True
+  if 'PING' in line and 'data bytes' in line:
+    return False
+  else:
+    tm.print_at(0, -1, 'No match for ' + line)
+    timeseries_dict['err_line'] = line
+    return False
+
+cell_locations = []
+cell_width = -1
+cell_height = -1
+def redraw(timeseries_dict, force):
+  if not force and time.time() < timeseries_dict['last_redraw_time'] + command_line.redraw_delay:
+    return
+
+  timeseries_obj = timeseries_dict['timeseries_obj']
+
+  footer = timeseries_obj.get_footer(cell_width-1)
+  row = timeseries_dict['row']
+  tm.print_at(cell_locations[0][row][0], cell_locations[0][row][1] + cell_height, footer)
+  tm.print_at(cell_locations[1][row][0], cell_locations[1][row][1] + cell_height, footer)
+  tm.flush()
+
+  timeseries_obj.advance()
+  stats = timeseries_obj.get_stats()
+
+  loss_pct_max = 0.0
+  loss_pcts = [x['loss%'] for x in stats if 'no_data' not in x]
+  if loss_pcts:
+    loss_pct_max = max(loss_pcts)
+
+  rtt_min = 0.0
+  rtt_mins = [x['min'] for x in stats if 'no_rtts' not in x]
+  if rtt_mins:
+    rtt_min = min(rtt_mins)
+
+  rtt_max = 0.0
+  rtt_maxs = [x['max'] for x in stats if 'no_rtts' not in x]
+  if rtt_maxs:
+    rtt_max = max(rtt_maxs)
+
+  header_strings = ['%.1fs rtt:%.1f→%.1f' % (timeseries_obj.get_age(), rtt_min, rtt_max)]
+  if 'shortened_line' in timeseries_dict:
+    header_strings.append(timeseries_dict['shortened_line'])
+
+  # There is some (rendering?) bug that is preventing 
+  tm.timeseries2(
+      cell_locations[0][row][0], cell_locations[0][row][1],
+      cell_width - 1, cell_height, rtt_max, header_strings, stats, rtt_colors,
+      timeseries_dict['ip_address'])
+
+  header_strings = ['%.1fs ↑%d' % (timeseries_obj.get_age(), loss_pct_max)]
+  if 'err_line' in timeseries_dict:
+    header_strings.append(timeseries_dict['err_line'])
+
+  tm.timeseries2(
+      cell_locations[1][row][0], cell_locations[1][row][1],
+      cell_width - 1, cell_height, max(loss_pct_max, 1), header_strings, stats, loss_colors)
+
+  tm.flush()
+  timeseries_dict['last_redraw_time'] = time.time()
+
+def redraw_all():
+  #TODO: get these in an object/dict that can be passed around:
+  global cell_locations
+  global cell_width
+  global cell_height
+
+  tm.clear_screen()
+  cell_locations, cell_width, cell_height = tm.draw_grid(
+      1, 1,
+      tm.get_terminal_width()-1, tm.get_terminal_height() - 3, # Leave room @ btm for responses
+      2, len(command_line.ip_addresses))
+
+  for timeseries_dict in timeseries:
+    redraw(timeseries_dict, True)
+
+#
+#      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#TODO: !!!!!!!get stderr on the screen!!!!!!!!!
+#      !! ('ping: sendto: No route to host') !!
+#      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#
+
+last_term_width = -1
+last_term_height = -1
+while True:
+  handle_user_input()
+
+  readable_stdouts, _, _ = select.select(stdouts, [], [])
+  fd = random.choice(readable_stdouts)
+  timeseries_dict = fileno_to_timeseries[fd]
+  file_stream = timeseries_dict['stdout']
+  line = file_stream.readline().decode().strip()
+
+  new_data = parse_line(timeseries_dict, line)
+  if not new_data:
+    time.sleep(0.1)
+    continue
+
+  term_width = tm.get_terminal_width()
+  term_height = tm.get_terminal_height()
+  if term_width != last_term_width or term_height != last_term_height:
+    last_term_width = term_width
+    last_term_height = term_height
+    redraw_all()
+    continue
+
+  redraw(timeseries_dict, False)
+
