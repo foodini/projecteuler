@@ -19,6 +19,10 @@ TODO:
 * Add data about max losses in a row.
 * Consider using the banner font for the watermark
 * Draw the timescale only once (at screen bottom)? I don't like how it melts the cells together.
+* Add total packets sent/recd/lost to loss panes.
+* Don't redraw while there are still results in the data streams. When on battery, the system
+  will try to draw one update, and it will take so long that the next packet to arrive will trigger
+  another full redraw and the entire thing falls behind (running at ~10% of real time.)
 '''
 
 import argparse
