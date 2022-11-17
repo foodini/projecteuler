@@ -7,7 +7,6 @@ TODO:
 * Fix the timescale.
 * Best way to show packet loss? I'm still not happy with just showing loss percentage - especially
   with a non-linear x-axis.
-* Sync up the max RTT and the max loss % across all rows so they're all at the same vertical scale.
 * add a --text (and a 't' user interaction to toggle) to do everything in text mode. This will make
   the thing useful for non-iTerm2 users, or anyone who is running this across an ssh connection.
   * Check the ancestry of the process to see if the terminal is sshd or other remote session, and
@@ -22,6 +21,8 @@ TODO:
   tm.terminate_getch_immediate() deals with the fact that I don't get my cursor back. Echo is
   working, but I have no indication of where my cursor is.
 * Log all stdout/stderr
+* How wide are the buckets? (esp on linear scale)
+* Display how many packets in a row have been lost.
 
 ISSUES:
 * I occasionally see packets with VERY LARGE rtts - like in the minutes range. I wonder if it is
@@ -75,6 +76,7 @@ class Bucket(object):
   def advance(self, now):
     while len(self.results) and self.results[0].timestamp < now - self.expiration_age:
       r = self.results.pop(0)
+      self.dirty = True
       if self.older_bucket is not None:
         self.older_bucket.append(r)
 
@@ -407,7 +409,7 @@ def redraw(timeseries_dict, rtt_max, loss_pct_max):
   if 'shortened_line' in timeseries_dict:
     header_strings.append(timeseries_dict['shortened_line'])
 
-  # There is some (rendering?) bug that is preventing 
+  # There is some (rendering?) bug that is preventing
   tm.timeseries2(
       cell_locations[0][row][0], cell_locations[0][row][1],
       cell_width - 1, cell_height, rtt_max, header_strings, stats.bucket_stats, rtt_colors,
@@ -419,7 +421,11 @@ def redraw(timeseries_dict, rtt_max, loss_pct_max):
 
   tm.timeseries2(
       cell_locations[1][row][0], cell_locations[1][row][1],
-      cell_width - 1, cell_height, loss_pct_max, header_strings, stats.bucket_stats, loss_colors)
+      cell_width - 1, cell_height,
+      # using the max of the actual loss pct and a small non-zero value forces 0% packet loss
+      # to the bottom of the screen when there is no loss anywhere in the history.
+      max(0.001, loss_pct_max),
+      header_strings, stats.bucket_stats, loss_colors)
 
   tm.flush()
 
@@ -455,7 +461,6 @@ def init_screen():
 
 last_term_width = -1
 last_term_height = -1
-start_time = time.time()
 while True:
   term_width = tm.get_terminal_width()
   term_height = tm.get_terminal_height()
@@ -466,12 +471,12 @@ while True:
 
   handle_user_input()
 
+  start_time = time.time()
   while time.time() - start_time < command_line.redraw_delay:
     #By default, select waits for some file descriptor to become available.
     readable_stdouts, _, _ = select.select(stdouts, [], [], command_line.redraw_delay)
     if not readable_stdouts:
-      time.sleep(0.1)
-      continue
+      break
 
     fd = random.choice(readable_stdouts)
     timeseries_dict = fileno_to_timeseries[fd]
@@ -480,7 +485,9 @@ while True:
 
     parse_line(timeseries_dict, line)
 
-  tm.print_at(1,-1,time.time()-start_time)
-  start_time = time.time()
+  draw_start_time = time.time()
   redraw_all()
+  tm.print_at(1, -1, 'redraw_all() time: %f' % (time.time() - draw_start_time))
 
+  while time.time() - start_time < command_line.redraw_delay:
+    time.sleep(0.02)
