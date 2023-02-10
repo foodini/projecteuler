@@ -1,6 +1,7 @@
 # * Set the default prompt hostname color in here, if you're still going to use
 #   one.
 # * de-dupe the PATH? (got the path_dedup util, but not sure i need it.)
+# * in git_do, you're using grep instead of $GREPLOC
 
 #set -xv
 
@@ -48,9 +49,9 @@ export GITLOC=/usr/bin/git
 #I get sick of doing grep --line-buffered. I can just do grep $B
 export B=--line-buffered
 
-bind -x '"\eo":"expand_scm -o $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
-bind -x '"\en":"expand_scm -c $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
-bind -x '"\eh":"expand_history $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
+#bind -x '"\eo":"expand_scm -o $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
+#bind -x '"\en":"expand_scm -c $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
+bind -x '"\C-n":"expand_history $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
 
 FBH_DELIM="⦀"
 
@@ -61,7 +62,7 @@ HISTFILESIZE=10000
 
 #######################Per-machine configurations###############################
 case $HOSTNAME in
-Rons-MacBook-Pro*|rons-mbp*)
+*s-MacBook-Pro*|rons-mbp*|ronb-01XMD6R)
   export BASHRC_XTRAS_TIMESTAMP=`stat -f %m ~/.bashrc_xtras`
 
   export GREPLOC=/usr/bin/grep
@@ -225,6 +226,8 @@ function fc {
 # can you pipe for...done to an xargs?
 function git_do {
     echo $GITLOC status | $GREPLOC '(modified)|(added)'
+
+    # REGARDING THE USE OF grep here: replacing w/ $GREPLOC fails and I don't know why.
     for x in `$GITLOC status | grep -e '((modified)|(added)):' | tr -s " " | cut -f2 -d" "`; do echo $x; done
 }
 
@@ -333,7 +336,7 @@ get_elapsed_time() {
     START_ELAPSED_TIME=$1
     END_ELAPSED_TIME=$2
     ELAPSED_TIME_IN_S=`echo "scale=3; ( $END_ELAPSED_TIME - $START_ELAPSED_TIME ) / 1000000000.0" | bc`
-    python -c "from datetime import timedelta; print(str(timedelta(seconds=$ELAPSED_TIME_IN_S)))"
+    python3 -c "from datetime import timedelta; print(str(timedelta(seconds=$ELAPSED_TIME_IN_S)))"
 }
 
 # (The trap handler)
@@ -393,7 +396,7 @@ on_command_exited_handler() {
 
     if [ "$SUPPRESS_LOG_LINE" == "False" ]; then
         COMMAND_END_S=`python3 -c "import time; print(time.time())"`
-        ELAPSED_FORMATTED=`python -c "from datetime import timedelta; print(str(timedelta(seconds=$COMMAND_END_S-$COMMAND_START_S)))"`
+        ELAPSED_FORMATTED=`python3 -c "from datetime import timedelta; print(str(timedelta(seconds=$COMMAND_END_S-$COMMAND_START_S)))"`
 
         echo "$COMMAND_START_DATE$FBH_DELIM${ELAPSED_FORMATTED}$FBH_DELIM$$$FBH_DELIM$GIT_BRANCH$FBH_DELIM$PWD_AT_COMMAND_ENTRY$FBH_DELIM$LAST_RETURN_VAL$FBH_DELIM$COMMAND_LINE" >> ~/full_bash_history
     fi
@@ -478,7 +481,8 @@ function figit() {
     TXT=$1
     EMO1=$2
     EMO2=$3
-    figlet -f 3x5 $TXT | sed -e "s/ /:$EMO1:/g" | sed -e "s/#/:$EMO2:/g" | tail -5
+    #figlet -f 3x5 $TXT | sed -e "s/ /:$EMO1:/g" | sed -e "s/#/:$EMO2:/g" | tail -5
+    figlet -f banner $TXT | sed -e "s/ /:$EMO1:/g" | sed -e "s/#/:$EMO2:/g" | tail -8
 }
 
 ssh() {
@@ -559,6 +563,7 @@ tell application "iTerm"
 end tell
 EOF
 }
+
 
 function bdr() {
   ITERM2_PROMPT_MARK_TYPE=`type -t iterm2_prompt_mark`
