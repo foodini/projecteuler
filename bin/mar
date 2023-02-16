@@ -124,7 +124,7 @@ while not done:
     for key, _ in active_fds:
       data = reader(key.fileobj)
       annotations_dict['chars'] += 1
-      print(data)
+      #print(data)
       if data != '':
         active_buffs += 1
         buffers[key.fileobj] += str(data)
