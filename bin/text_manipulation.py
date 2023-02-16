@@ -9,14 +9,11 @@ import termios
 import time
 import tty
 
-#Text color
-#bold, underline, flash, etc.
-#print_at, cursor_to
-#get_screen_size
+#cursor_to
 #print_to_status_line
 #set_background_image?
 #read_value_at? (If I can do this, I can underline stuff on-screen. a bit.)
-#Basic drawing functions - boxes, histograms.
+#Given an image in a buffer, print to screen. (Currently requires b64 first.)
 
 def get_terminal_width():
   return os.get_terminal_size().columns
@@ -327,7 +324,7 @@ def _watermark(width, height, text):
     no_figlet = True
     return bytearray(width * height * 3)
 
-  stream = Popen([figlet_location, '-w', '99999', '-f', 'doh', text], stdout=PIPE)
+  stream = Popen([figlet_location, '-w', '99999', '-f', 'banner', text], stdout=PIPE)
   lines = stream.stdout.readlines()
   nonempty_lines = []
   for i, line in enumerate(lines):
@@ -343,9 +340,7 @@ def _watermark(width, height, text):
     try:
       for x, c in enumerate(nonempty_lines[i]):
         if x < width:
-          if c == ':':
-            set_pixel(buffer, width, height, x, y, 24, 24, 24)
-          elif c != ' ':
+          if c != ' ':
             set_pixel(buffer, width, height, x, y, 48, 48, 48)
     except:
       import ipdb; ipdb.set_trace()
@@ -371,8 +366,8 @@ def timeseries2(x0, y0, width, height, maxval, header_strings, buckets, colors, 
     legend_len += (len(k) + 1) # the +1 is making room for a space between stats
     print_at(x0 + chart_width - legend_len, y0, k)
 
-  bucket_pixel_width = 7
-  pixels_per_character_height = 10
+  bucket_pixel_width = 2
+  pixels_per_character_height = 7
   image_width = bucket_pixel_width * len(buckets)
   image_height = chart_height * pixels_per_character_height
 
