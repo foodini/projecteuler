@@ -32,11 +32,11 @@ def execute(cmd):
         if rfd == tsk.stdout.fileno():
           line = tsk.stdout.readline()
           if len(line) > 0:
-            print(line[:-1])
+            print(line[:-1].decode())
         if rfd == tsk.stderr.fileno():
           line = tsk.stderr.readline()
           if len(line) > 0:
-            print(line[:-1])
+            print(line[:-1].decode())
       if event & select.POLLHUP:
         poll.unregister(rfd)
         pollc = pollc - 1
@@ -69,8 +69,14 @@ prev_mod_time = time.ctime(os.path.getmtime(executable))
 while True:
   cur_mod_time = time.ctime(os.path.getmtime(executable))
   if cur_mod_time > prev_mod_time or first_time:
+    if not first_time:
+      print()
     execute(sys.argv[1:])
     print('================')
     first_time = False
+    start_time = time.time()
+  else:
+    print('\b\b\b\b\b\b%6d' % int(time.time() - start_time),
+        end='', flush=True)
   prev_mod_time = cur_mod_time
   time.sleep(1)
