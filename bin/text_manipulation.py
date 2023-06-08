@@ -341,7 +341,7 @@ def _watermark(width, height, text):
       for x, c in enumerate(nonempty_lines[i]):
         if x < width:
           if c != ' ':
-            set_pixel(buffer, width, height, x, y, 48, 48, 48)
+            set_pixel(buffer, width, height, x, y, 64, 64, 64)
     except:
       import ipdb; ipdb.set_trace()
       pass

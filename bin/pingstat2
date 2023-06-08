@@ -2,6 +2,10 @@
 
 '''
 TODO:
+* Add and remove targets at runtime
+* "max" on the rtt graph should be white.
+* Add a vertical scale. It kills 3-5 columns, though....
+* When a bucket has only losses, it's stats show zero instead of empty.
 * add overall loss %
 * When changing between axes, show some sort of 'loading' indicator.
 * Fix the timescale.
@@ -23,6 +27,7 @@ TODO:
 * Log all stdout/stderr
 * How wide are the buckets? (esp on linear scale)
 * Display how many packets in a row have been lost.
+* RTT MIN IS SHOWING AS 0.0 IN ALL WINDOWS!?!?!?!?!
 
 ISSUES:
 * I occasionally see packets with VERY LARGE rtts - like in the minutes range. I wonder if it is
