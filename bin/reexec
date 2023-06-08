@@ -1,82 +1,62 @@
-#!/usr/bin/env python3
+#!/usr/local/bin/bash
 
-#TODO
-# * Remove the requirement that the file be executed.  You need to be able
-#   to provide a command.  (reexec foo.c "gcc foo.c")
-# * Need better error message when executable not found. For example;
-#   reexec graph.py graph.py instead of reexec ./graph.py ./graph.py
+#TODO:
+# * Add ability to separately specify file(s) to watch from command to exe.
+# * format time to HH:MM:SS
 
-import sys
-import os.path
-import time
-import subprocess
-import select
-import inspect
+CPID=""
+# Single quotes around the command so interpolation of CPID is done at sig time.
+trap 'echo shutting down $CPID; kill -9 $CPID &>> /dev/null; exit 0' SIGINT
 
-def mark():
-  print(inspect.currentframe().f_back.f_lineno)
+function restart_child() {
+  # If you slap parentheses around $@ &, you can silence job control msgs, but
+  # you lose the ability to extract $!
+  $@ &
+  CPID=$!
+  echo "new pid: $CPID"
+  let COUNT=0
+}
 
-def execute(cmd):
-  tsk = subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+function dead {
+  kill -0 $CPID &>> /dev/null
+  RETVAL=$?
 
-  poll = select.poll()
-  poll.register(tsk.stdout,select.POLLIN | select.POLLHUP)
-  poll.register(tsk.stderr,select.POLLIN | select.POLLHUP)
-  pollc = 2
+  # REMEMBER that a non-zero return value, in bash, means FAILURE!!!
+  if [[ "$RETVAL" == "0" ]]
+  then
+    return 1
+  else
+    return 0
+  fi
+  return $RETVAL
+}
 
-  events = poll.poll()
-  while pollc > 0 and len(events) > 0:
-    for event in events:
-      (rfd,event) = event
-      if event & select.POLLIN:
-        if rfd == tsk.stdout.fileno():
-          line = tsk.stdout.readline()
-          if len(line) > 0:
-            print(line[:-1].decode())
-        if rfd == tsk.stderr.fileno():
-          line = tsk.stderr.readline()
-          if len(line) > 0:
-            print(line[:-1].decode())
-      if event & select.POLLHUP:
-        poll.unregister(rfd)
-        pollc = pollc - 1
-      if pollc > 0: events = poll.poll()
-  sys.stdout.flush()
-  tsk.wait()
+function print_time() {
+  let seconds="$1%60"
+  let minutes="($1/60)%60"
+  let hours="$1/3600"
+  printf "\b\b\b\b\b\b\b\b%d:%02d:%02d" $hours $minutes $seconds
+}
 
-def which(program):
-  import os
-  def is_exe(fpath):
-    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+LAST_MOD_TIME=`date -r $1`
+restart_child $@
 
-  fpath, fname = os.path.split(program)
-  if fpath:
-    if is_exe(program):
-      return program
-  else:
-    for path in os.environ["PATH"].split(os.pathsep):
-      path = path.strip('"')
-      exe_file = os.path.join(path, program)
-      if is_exe(exe_file):
-        return exe_file
-
-  return None
-
-executable = which(sys.argv[1])
-
-first_time = True
-prev_mod_time = time.ctime(os.path.getmtime(executable))
-while True:
-  cur_mod_time = time.ctime(os.path.getmtime(executable))
-  if cur_mod_time > prev_mod_time or first_time:
-    if not first_time:
-      print()
-    execute(sys.argv[1:])
-    print('================')
-    first_time = False
-    start_time = time.time()
-  else:
-    print('\b\b\b\b\b\b%6d' % int(time.time() - start_time),
-        end='', flush=True)
-  prev_mod_time = cur_mod_time
-  time.sleep(1)
+while [[ true ]]
+do
+  sleep 1
+  CUR_MOD_TIME=`date -r $1`
+  if [[ "$LAST_MOD_TIME" == "$CUR_MOD_TIME" ]]
+  then
+    # Remember that in bash 0 is SUCCESSFUL and 1 is FAILURE
+    if dead
+    then
+      let COUNT="$COUNT+1"
+      print_time COUNT
+    fi
+  else
+    echo
+    LAST_MOD_TIME=$CUR_MOD_TIME
+    kill -9 $CPID &>> /dev/null
+    restart_child $@
+  fi
+done
