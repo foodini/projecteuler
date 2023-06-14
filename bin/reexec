@@ -11,6 +11,7 @@ trap 'echo shutting down $CPID; kill -9 $CPID &>> /dev/null; exit 0' SIGINT
 function restart_child() {
   # If you slap parentheses around $@ &, you can silence job control msgs, but
   # you lose the ability to extract $!
+  echo '$@' "$@"
   $@ &
   CPID=$!
   echo "new pid: $CPID"
@@ -38,25 +39,37 @@ function print_time() {
   printf "\b\b\b\b\b\b\b\b%d:%02d:%02d" $hours $minutes $seconds
 }
 
-LAST_MOD_TIME=`date -r $1`
-restart_child $@
+echo $LINENO
+ARGS=$@
+echo $LINENO ${ARGS[*]}
+HELPER_RESULT=( $(reexec_helper.py ${ARGS[*]}) )
+echo $LINENO "${HELPER_RESULT[*]}"
+for arg in "${HELPER_RESULT[@]}"; do
+  echo $LINENO $arg
+done
+LAST_MOD_TIME=${HELPER_RESULT[0]}
+echo LAST_MOD_TIME: $LAST_MOD_TIME
+COMMAND_LINE=("${HELPER_RESULT[@]:1}")
+restart_child ${COMMAND_LINE[@]}
 
 while [[ true ]]
 do
   sleep 1
-  CUR_MOD_TIME=`date -r $1`
+  HELPER_RESULT=( $(reexec_helper.py ${ARGS[*]}) )
+  CUR_MOD_TIME=${HELPER_RESULT[0]}
   if [[ "$LAST_MOD_TIME" == "$CUR_MOD_TIME" ]]
   then
     # Remember that in bash 0 is SUCCESSFUL and 1 is FAILURE
     if dead
     then
-      let COUNT="$COUNT+1"
-      print_time COUNT
+      NOW=`date +%s`
+      let TIME_DELTA="$NOW-$LAST_MOD_TIME"
+      print_time TIME_DELTA
     fi
   else
     echo
     LAST_MOD_TIME=$CUR_MOD_TIME
     kill -9 $CPID &>> /dev/null
-    restart_child $@
+    restart_child ${COMMAND_LINE[@]}
   fi
 done
