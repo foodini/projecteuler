@@ -1,20 +1,18 @@
 #!/usr/local/bin/bash
 
 #TODO:
-# * Add ability to separately specify file(s) to watch from command to exe.
-# * format time to HH:MM:SS
 
 CPID=""
-# Single quotes around the command so interpolation of CPID is done at sig time.
+# Single quotes around the command so interpolation of CPID is done at signal
+# time.
 trap 'echo shutting down $CPID; kill -9 $CPID &>> /dev/null; exit 0' SIGINT
 
 function restart_child() {
   # If you slap parentheses around $@ &, you can silence job control msgs, but
   # you lose the ability to extract $!
-  echo '$@' "$@"
   $@ &
   CPID=$!
-  echo "new pid: $CPID"
+  echo "(pid:$CPID) $@"
   let COUNT=0
 }
 
@@ -35,20 +33,15 @@ function dead {
 function print_time() {
   let seconds="$1%60"
   let minutes="($1/60)%60"
-  let hours="$1/3600"
-  printf "\b\b\b\b\b\b\b\b%d:%02d:%02d" $hours $minutes $seconds
+  let hours="($1/3600)%24"
+  let days="$1/86400"
+  printf "\b\b\b\b\b\b\b\b\b\b\b\b\b%d:%02d:%02d:%02d" \
+    $days $hours $minutes $seconds
 }
 
-echo $LINENO
 ARGS=$@
-echo $LINENO ${ARGS[*]}
 HELPER_RESULT=( $(reexec_helper.py ${ARGS[*]}) )
-echo $LINENO "${HELPER_RESULT[*]}"
-for arg in "${HELPER_RESULT[@]}"; do
-  echo $LINENO $arg
-done
 LAST_MOD_TIME=${HELPER_RESULT[0]}
-echo LAST_MOD_TIME: $LAST_MOD_TIME
 COMMAND_LINE=("${HELPER_RESULT[@]:1}")
 restart_child ${COMMAND_LINE[@]}
 
