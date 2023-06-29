@@ -1,6 +1,7 @@
 #!/usr/local/bin/bash
 
 #TODO:
+# rename the helper so typing reexec[tab] properly completes... adding the space
 
 CPID=""
 # Single quotes around the command so interpolation of CPID is done at signal
@@ -8,6 +9,15 @@ CPID=""
 trap 'echo shutting down $CPID; kill -9 $CPID &>> /dev/null; exit 0' SIGINT
 
 function restart_child() {
+  # if the iTerm2 extensions are installed, attach a mark to the starting point
+  # of the process' output so we can shift-command-up or shift-command-down
+  # to shuffle through them. I'm not using the iterm2_shell_integration.bash
+  # script to get the iterm2_prompt_mark function because somehow, sourcing
+  # the file doesn't make the fuction available here.
+  if [ "$HOST_PLATFORM" == "OSX" ]; then
+    printf "\033]133;A\007"
+  fi
+
   # If you slap parentheses around $@ &, you can silence job control msgs, but
   # you lose the ability to extract $!
   $@ &
@@ -35,7 +45,7 @@ function print_time() {
   let minutes="($1/60)%60"
   let hours="($1/3600)%24"
   let days="$1/86400"
-  printf "\b\b\b\b\b\b\b\b\b\b\b\b\b%d:%02d:%02d:%02d" \
+  printf "\033[32m\b\b\b\b\b\b\b\b\b\b\b\b\b%d:%02d:%02d:%02d\033[0m" \
     $days $hours $minutes $seconds
 }
 
