@@ -3,6 +3,8 @@
 #TODO:
 # eliminate the helper. There's got to be a date -r solution that will work.
 # If no command appears after '--' that should puke.
+# How do I do something like:
+#   reexec tmp.cpp -- 'g++ tmp.cpp && ./a.out'
 
 if [[ "$@" == "" ]] || [[ "$1" == "-?" ]]; then
   echo "usage: $0 command"
