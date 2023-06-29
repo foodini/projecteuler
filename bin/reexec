@@ -1,7 +1,27 @@
 #!/usr/local/bin/bash
 
 #TODO:
-# rename the helper so typing reexec[tab] properly completes... adding the space
+# eliminate the helper. There's got to be a date -r solution that will work.
+# If no command appears after '--' that should puke.
+
+if [[ "$@" == "" ]] || [[ "$1" == "-?" ]]; then
+  echo "usage: $0 command"
+  echo "       $0 files_to_watch -- command"
+  echo
+  echo "if no '--' appears in the command, the first token of the command is"
+  echo "treated as a file to watch."
+  echo
+  echo "reexec will continuously watch the file\(s\) given and, should the most"
+  echo "recent mod time change, the command will be re-executed. Should the"
+  echo "first invocotion still be running when the mod time changes, it will"
+  echo "be killed before the new one is started."
+  echo
+  echo "Note: reexec uses most recent mod time for all files given. If a file"
+  echo "is deleted, reexec will only restart the process if the deleted file"
+  echo "was the most recent. This is considered a minor bug and will likely not"
+  echo "be fixed."
+  exit 0
+fi
 
 CPID=""
 # Single quotes around the command so interpolation of CPID is done at signal
