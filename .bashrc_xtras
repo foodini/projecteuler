@@ -50,7 +50,7 @@ export GITLOC=/usr/bin/git
 export B=--line-buffered
 
 #bind -x '"\eo":"expand_scm -o $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
-#bind -x '"\en":"expand_scm -c $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
+bind -x '"\C-p":"expand_scm -c $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
 bind -x '"\C-n":"expand_history $COMP_TMP; source $COMP_TMP; rm $COMP_TMP"'
 
 FBH_DELIM="⦀"
@@ -422,7 +422,7 @@ gen_prompt_text() {
         ITERM2_PROMPT_MARK_TYPE=`type -t iterm2_prompt_mark`
         if [ "$ITERM2_PROMPT_MARK_TYPE" == "function" ]; then
             #Add the info that iTerm2 Shell Integration needs for mark navigation. (You can always
-            #add one, manually, with shift-cmd-m) Navigate w/ shift-cmd-arrows
+            #add one, manually, with shift-command-m) Navigate w/ shift-command-arrows
             export PS1="\[\033]0;$PROMPT_BNW\a\]\[$(iterm2_prompt_mark)\]$PROMPT_COL"
         else
             export PS1="\[\033]0;$PROMPT_BNW\a\]$PROMPT_COL"
