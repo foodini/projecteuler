@@ -62,8 +62,10 @@ HISTFILESIZE=10000
 
 #######################Per-machine configurations###############################
 case $HOSTNAME in
-rons-mbp.lan*|Rons-MacBook-Pro.local*)
+rons-mbp.lan*|Rons-MacBook-Pro.local*|ronb-01XMD6R*)
   echo SETTING UP MAC
+  export BASHRC_XTRAS_TIMESTAMP=`stat -f %m ~/.bashrc_xtras`
+
   ssh-add -K ~/.ssh/id_rsa_victor_shared 2> /dev/null > /dev/null
   ssh-agent > /dev/null
 
