@@ -62,20 +62,8 @@ HISTFILESIZE=10000
 
 #######################Per-machine configurations###############################
 case $HOSTNAME in
-*s-MacBook-Pro*|rons-mbp*|ronb-01XMD6R)
-  export BASHRC_XTRAS_TIMESTAMP=`stat -f %m ~/.bashrc_xtras`
-
-  export GREPLOC=/usr/bin/grep
-  export HOST_PLATFORM="OSX"
-  export PC_PREFERRED=$PC_BLUE
-  export ESC_PREFERRED=$ESC_BLUE
-  bind -x '"˙":"expand_history $COMP_TMP; source $COMP_TMP"'
-  bind -x '"ø":"expand_scm -o $COMP_TMP; source $COMP_TMP"'
-  ;;
-1847JGH6*|ip-10-1-2-228*)
-  export BASHRC_XTRAS_TIMESTAMP=`stat -c%Y ~/.bashrc_xtras`
-
-  #fab stage deploy.restart_supervisor
+rons-mbp.lan*|Rons-MacBook-Pro.local*)
+  echo SETTING UP MAC
   ssh-add -K ~/.ssh/id_rsa_victor_shared 2> /dev/null > /dev/null
   ssh-agent > /dev/null
 
@@ -85,49 +73,7 @@ case $HOSTNAME in
   export ESC_PREFERRED=$ESC_GREEN
 
   alias up="cd \"\$(git rev-parse --show-toplevel)\""
-
-  export GOPATH=/Users/ronb/workspace/victor/cloud/go:/Users/ronb/workspace/victor/generated/cladgo:/Users/ronb/workspace/victor/generated/go:/Users/ronb/workspace/victor/tools/message-buffers/support/go
-  pathpost /usr/local/go/bin
-  pathpost "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
-  source ~/workspace/victor/project/victor/scripts/usefulALiases.sh
-  function localbot {
-    export ANKI_ROBOT_HOST=localhost
-    export ANKI_ROBOT_SERIAL=
-    export ANKI_ROBOT_NAME=
-    export ANKI_ROBOT_ALIAS='loc'
-    export ANKI_ROBOT_COLOR='BLUE'
-    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
-  }
-  function perfbot {
-    export ANKI_ROBOT_HOST=192.168.41.101
-    export ANKI_ROBOT_SERIAL=00E10064
-    export ANKI_ROBOT_NAME=E2A5
-    export ANKI_ROBOT_ALIAS='perf'
-    export ANKI_ROBOT_COLOR='BOLD,PURPLE'
-    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
-  }
-  function relbot {
-    export ANKI_ROBOT_HOST=192.168.41.34
-    export ANKI_ROBOT_SERIAL=00800124
-    export ANKI_ROBOT_NAME=T5Y3
-    export ANKI_ROBOT_ALIAS='rel'
-    export ANKI_ROBOT_COLOR='BOLD,BROWN'
-    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
-  }
-  function relhome {
-    relbot
-    export ANKI_ROBOT_HOST=192.168.86.79
-    export ANKI_ROBOT_ALIAS='relhome'
-    export ANKI_ROBOT_COLOR='BOLD,WHITE'
-    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
-  }
-  function relroam {
-    relbot
-    export ANKI_ROBOT_HOST=192.168.43.12
-    export ANKI_ROBOT_ALIAS='relroam'
-    export ANKI_ROBOT_COLOR='BOLD,RED'
-    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
-  }
+  alias gpo='git push origin $BRANCH'
 
   bind -x '"˙":"expand_history $COMP_TMP; source $COMP_TMP"'
   bind -x '"ø":"expand_scm -o $COMP_TMP; source $COMP_TMP"'
