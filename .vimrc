@@ -10,7 +10,7 @@
 
 set mouse=a
 
-set ai tabstop=4 nu shiftwidth=4 backspace=eol,indent,start expandtab softtabstop=4 hlsearch incsearch noic
+set ai tabstop=2 nu shiftwidth=2 backspace=eol,indent,start expandtab softtabstop=2 hlsearch incsearch noic
 :syntax on
 :noremap <F2> :set ic! ic?<CR>
 :noremap <F3> :set nu! nu?<CR>

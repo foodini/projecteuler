@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #TODO: add quoted, ticked, and backticked arguments. i.e., ls^H should match
 #      vi `ls | grep foo`.... and matches should include their quotings.

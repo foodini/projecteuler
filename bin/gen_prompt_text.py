@@ -10,27 +10,32 @@ import sys
 
 # gen_prompt_text [T|F] $? GREEN,BOLD BLUE,UNDER origin/master 
 
-esc_format = '\\[\\033[{}m\\]'
-esc_format = '\[\033[{}m\]'
-esc_format = '\033[{}m'
-esc_format = '\\033[{}m'
+#esc_format = '\\[\\033[{}m\\]'
+#esc_format = '\[\033[{}m\]'
+#esc_format = '\033[{}m'
+#esc_format = '\\033[{}m'
 #esc_format = '[{}]'
 
+def esc_format(*args):
+    return '\\033[{}m'.format(';'.join(args))
+
 codes = {
-    'BLACK':       30,
-    'RED':         31,
-    'GREEN':       32,
-    'BROWN':       33,
-    'BLUE':        34,
-    'PURPLE':      35,
-    'CYAN':        36,
-    'WHITE':       37,
-    'UNDER':       4,
-    'NO_UNDER':    24,
-    'BOLD':        1,
-    'NO_BOLD':     21,
-    'DARK':        2,
-    'NO_DARK':     22
+    'BLACK':       '30',
+    'RED':         '31',
+    'GREEN':       '32',
+    'BROWN':       '33',
+    'BLUE':        '34',
+    'PURPLE':      '35',
+    'CYAN':        '36',
+    'WHITE':       '37',
+    'UNDER':       '4',
+    'NO_UNDER':    '24',
+    'BOLD':        '1',
+    'NO_BOLD':     '21',
+    'DARK':        '2',
+    'NO_DARK':     '22',
+    'INVERT':      '7',
+    'NO_INVERT':   '27'
 }
 
 in_color = sys.argv[1] == 'T'
@@ -56,9 +61,7 @@ def top_of_stack_to_result():
     #The order the're written seems to matter. Bold won't work
     #unless at the end.
     e = stack[-1]
-    sequence = '{};{};{};{}'.format(
-            e['color'], e['dark'], e['under'], e['bold'])
-    concat(esc_format.format(sequence), True)
+    concat(esc_format(e['color'], e['dark'], e['under'], e['bold']), True)
 
 def push_state(**kwargs):
     entry = stack[-1].copy()
@@ -86,7 +89,7 @@ def pop_state():
 #I don't like underlined spaces, so this is an easy way to write
 #one without the underline.
 def space():
-    push_state(under=24)
+    push_state(under='24')
     concat(' ')
     pop_state()
 
@@ -115,8 +118,18 @@ pwd = os.environ['PWD']
 if len(pwd) > 37:
     pwd = '...' + pwd[-37:]
 
-concat('\[')
-concat('╓', True)
+bashrc_xtras_path = os.path.join(os.environ['HOME'], '.bashrc_xtras')
+stale_xtras_file = False
+if 'BASHRC_XTRAS_TIMESTAMP' in os.environ:
+    stale_xtras_file = os.stat(bashrc_xtras_path)[8] > int(os.environ['BASHRC_XTRAS_TIMESTAMP'])
+stale_xtras_warning = (esc_format(codes['INVERT'], codes['RED']) + '⚙!' +
+        esc_format(codes['NO_INVERT'], codes['WHITE']))
+
+concat('\[', True)
+if stale_xtras_file:
+    concat('{}╓'.format(stale_xtras_warning), True)
+else:
+    concat('╓', True)
 
 if previous_retval == '0':
     push_state_from_string(no_error_format)
@@ -127,7 +140,7 @@ concat(clock, True)
 context()
 concat(pwd)
 pop_state()
-concat('\]')
+concat('\]', True)
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Everything enclosed in \[ & \] is ignored in computing the width of the prompt, for the sake of
@@ -135,10 +148,13 @@ concat('\]')
 # If you want any escape characters in the last line, enclose each in \[ & \].
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 top_of_stack_to_result()
-concat('\\n╙', True)
+if stale_xtras_file:
+    concat('\\n{}╙'.format(stale_xtras_warning), True)
+else:
+    concat('\\n╙', True)
 
 if in_color:
-    esc_format.format(0)
+    esc_format('0')
 
 filename = (os.environ['HOME'] + '/tmp/prompt_' +
         str(os.getppid()) + '.sh')

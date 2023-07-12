@@ -66,7 +66,7 @@ def _get_terminal_settings():
   proc = subprocess.Popen(['/bin/stty', '-g'], stdout=subprocess.PIPE)
   settings = proc.communicate()[0]
   os.system('stty cooked echo')
-  return settings
+  return settings.decode()
 
 def _set_terminal_settings(settings):
   os.system('stty %s' % settings)
@@ -182,7 +182,7 @@ class Expand():
     self._print_prompt_line()
     option_number = 0;
     for option in options:
-      print _format_option(option, len(common_base), option_number)
+      print(_format_option(option, len(common_base), option_number))
       option_number += 1
 
     sys.stdout.write("> ")
@@ -242,19 +242,19 @@ class Expand():
 
   def _get_prompt(self):
     prompt = os.environ['PS1']
-    prompt = prompt.decode('unicode-escape')
+
+    prompt = re.sub(r'\x1b[^m]*m', '', prompt)
+    prompt = re.sub(r'\\033[^m]*m', '', prompt)
+    prompt = re.sub(r'\\[[\]]', '', prompt)
+    prompt = re.sub(r'\\n', '\n', prompt)
 
     #remove characters only used by bash:
-    prompt = prompt.replace('\[', '')
-    prompt = prompt.replace('\]', '')
-
-    #Get rid of anything in the prompt that is updating the status line:
-    (prompt, unused) = re.subn('.\e.*\a', '', prompt)
+    #prompt = re.sub(r'\[.*;', '', prompt)
 
     return prompt + ' '.join(self.command_tokens)
 
   def _print_prompt_line(self):
-    print self._get_prompt()
+    print(self._get_prompt())
 
   def _append_prompt_line(self):
     self.append_output('echo -e "%s"\n' % self._get_prompt())
