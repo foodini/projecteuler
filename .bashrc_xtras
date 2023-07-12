@@ -52,8 +52,8 @@ HISTFILESIZE=10000
 
 #######################Per-machine configurations###############################
 case $HOSTNAME in
-1847JGH6*|ip-10-1-2-228*)
-  #fab stage deploy.restart_supervisor
+rons-mbp.lan*|Rons-MacBook-Pro.local*)
+  echo SETTING UP MAC
   ssh-add -K ~/.ssh/id_rsa_victor_shared 2> /dev/null > /dev/null
   ssh-agent > /dev/null
 
@@ -65,61 +65,6 @@ case $HOSTNAME in
 
   alias up="cd \"\$(git rev-parse --show-toplevel)\""
   alias gpo='git push origin $BRANCH'
-
-  #Anki-specific
-  alias vic='cd ~/workspace/victor'
-  alias vic2='cd ~/workspace/victor2'
-  alias mac-cli='cd ~/workspace/victor/apps/demos/ble-pairing/mac-client'
-  alias vos='cd ~/workspace/vicos-oelinux'
-  alias perf='cd ~/workspace/victor/project/victor/simpleperf'
-  alias tut='cd ~/workspace/victor/tools/sdk/vector-python-sdk-private/sdk/examples/tutorials'
-  alias tut2='cd ~/workspace/victor2/tools/sdk/vector-python-sdk-private/sdk/examples/tutorials'
-  alias sdk='cd ~/workspace/victor/tools/sdk/vector-python-sdk-private/sdk'
-  alias sdk2='cd ~/workspace/victor2/tools/sdk/vector-python-sdk-private/sdk'
-  alias sshr='ssh $ANKI_ROBOT_ROOT'
-
-  export GOPATH=/Users/ronb/workspace/victor/cloud/go:/Users/ronb/workspace/victor/generated/cladgo:/Users/ronb/workspace/victor/generated/go:/Users/ronb/workspace/victor/tools/message-buffers/support/go
-  pathpost /usr/local/go/bin
-  pathpost "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
-  source ~/workspace/victor/project/victor/scripts/usefulALiases.sh
-  function localbot {
-    export ANKI_ROBOT_HOST=localhost
-    export ANKI_ROBOT_SERIAL=
-    export ANKI_ROBOT_NAME=
-    export ANKI_ROBOT_ALIAS='loc'
-    export ANKI_ROBOT_COLOR='BLUE'
-    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
-  }
-  function perfbot {
-    export ANKI_ROBOT_HOST=192.168.41.101
-    export ANKI_ROBOT_SERIAL=00E10064
-    export ANKI_ROBOT_NAME=E2A5
-    export ANKI_ROBOT_ALIAS='perf'
-    export ANKI_ROBOT_COLOR='BOLD,PURPLE'
-    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
-  }
-  function relbot {
-    export ANKI_ROBOT_HOST=192.168.41.34
-    export ANKI_ROBOT_SERIAL=00800124
-    export ANKI_ROBOT_NAME=T5Y3
-    export ANKI_ROBOT_ALIAS='rel'
-    export ANKI_ROBOT_COLOR='BOLD,BROWN'
-    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
-  }
-  function relhome {
-    relbot
-    export ANKI_ROBOT_HOST=192.168.86.79
-    export ANKI_ROBOT_ALIAS='relhome'
-    export ANKI_ROBOT_COLOR='BOLD,WHITE'
-    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
-  }
-  function relroam {
-    relbot
-    export ANKI_ROBOT_HOST=192.168.43.12
-    export ANKI_ROBOT_ALIAS='relroam'
-    export ANKI_ROBOT_COLOR='BOLD,RED'
-    export ANKI_ROBOT_ROOT="root@$ANKI_ROBOT_HOST"
-  }
 
   bind -x '"˙":"expand_history $COMP_TMP; source $COMP_TMP"'
   bind -x '"ø":"expand_scm -o $COMP_TMP; source $COMP_TMP"'
@@ -344,7 +289,7 @@ gen_prompt_text() {
         export PS1=$PROMPT_COL
     fi
 
-    set_term_bgcolor_for_state $BASE
+    #set_term_bgcolor_for_state $BASE
     stop_timer
 }
 
