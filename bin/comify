@@ -74,7 +74,7 @@ re_fieldbreak = re.compile('\s*\S+\s*')
 re_digitgroups = re.compile('\d{4,}')
 
 for line in sys.stdin:
-    line = line.strip()
+    line = line.rstrip()
     if not field_spec_exists:
         print (mark_floats(line), flush=True)
     else:
