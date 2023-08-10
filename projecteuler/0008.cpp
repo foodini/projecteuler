@@ -1,5 +1,5 @@
-
 #include <stdio.h>
+#include <algorithm>
 
 unsigned char l[] = {
 7,3,1,6,7,1,7,6,5,3,1,3,3,0,6,2,4,9,1,9,2,2,5,1,1,9,6,7,4,4,2,6,5,7,4,7,4,2,3,5,5,3,4,9,1,9,4,9,3,4,
@@ -27,14 +27,16 @@ unsigned char l[] = {
 int main()
 {
 	int num_in_list = sizeof(l);
-	int max = 0;
-	int product;
+	long int max = 0;
+	long int product;
 
 	for (int i=0; i<num_in_list - 5; i++)
 	{
-		product = l[i] * l[i+1]	* l[i+2] * l[i+3] * l[i+4];
+    product = 1;
+    for(int j=std::max(0,i-12); j<=i; j++)
+		product *= l[j];
 		if (product > max)
 			max = product;
 	}
-	printf ("%d\n", max);
+	printf ("%lu\n", max);
 }
