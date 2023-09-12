@@ -1,9 +1,0 @@
-#!/usr/bin/env python3
-
-import fileinput
-import re
-
-regexp = re.compile(" ")
-
-for line in fileinput.input():
-    print(re.sub(regexp, "\\ ", line.strip()))

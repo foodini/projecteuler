@@ -1,4 +1,4 @@
-bash_environment
+projecteuler
 ================
 
-bash_environment
+projecteuler

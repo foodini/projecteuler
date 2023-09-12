@@ -1,15 +1,3 @@
 /*
-/.bash_remote
-!.bashrc_xtras
-!/bin**
-!/projecteuler**
-!.gitignore
-!git_todo
-!.vimrc
 !.pyc
-
-#Fix this so you don't have to name every one:
-bin/wclive
-bin/src/wclive
-bin/status_time
-bin/src/status_time
+!.o
