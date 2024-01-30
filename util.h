@@ -2,6 +2,9 @@
 #define _UTIL_H
 #include <sys/time.h>
 
+typedef float f32;
+typedef double f64;
+
 typedef unsigned char u8;
 extern const u8 u8_min;
 extern const u8 u8_max;
