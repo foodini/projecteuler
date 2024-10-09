@@ -42,4 +42,12 @@ void print_s128(s128 u, char end='\0');
 double now();
 bool progress_timer();
 
+template <typename T>
+T gcd(T a, T b) {
+  if(a==0) return b;
+  if(b==0) return a;
+  if(a==b) return a;
+  if(a>b) return gcd(a-b, b);
+  return gcd(a, b-a);
+}
 #endif // __UTIL_H
